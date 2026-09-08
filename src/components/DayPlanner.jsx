@@ -7,13 +7,15 @@ export default function DayPlanner({
   day,
   candidates,
   onSelectDay,
-  selectedStopId,
-  onSelectStop,
+  selectedPlaceId,
+  onSelectPlace,
   onReorder,
   onRemoveStop,
   onEditStop,
   onEditCandidate,
   onRemoveCandidate,
+  onConfirmCandidate,
+  onAddTentative,
   mobileView,
   onChangeMobileView,
 }) {
@@ -22,6 +24,7 @@ export default function DayPlanner({
       <div className="mobile-mode-toggle" aria-label="Planner view">
         <button
           className={mobileView === "itinerary" ? "active" : ""}
+          aria-pressed={mobileView === "itinerary"}
           type="button"
           onClick={() => onChangeMobileView("itinerary")}
         >
@@ -29,6 +32,7 @@ export default function DayPlanner({
         </button>
         <button
           className={mobileView === "map" ? "active" : ""}
+          aria-pressed={mobileView === "map"}
           type="button"
           onClick={() => onChangeMobileView("map")}
         >
@@ -66,8 +70,8 @@ export default function DayPlanner({
 
           <ItineraryTimeline
             day={day}
-            selectedStopId={selectedStopId}
-            onSelectStop={onSelectStop}
+            selectedStopId={selectedPlaceId}
+            onSelectStop={onSelectPlace}
             onReorder={onReorder}
             onRemoveStop={onRemoveStop}
             onEditStop={onEditStop}
@@ -78,6 +82,10 @@ export default function DayPlanner({
             dayNumber={day.dayNumber}
             onEditCandidate={onEditCandidate}
             onRemoveCandidate={onRemoveCandidate}
+            onSelectCandidate={onSelectPlace}
+            selectedPlaceId={selectedPlaceId}
+            onConfirmCandidate={onConfirmCandidate}
+            onAddTentative={onAddTentative}
           />
         </section>
 
@@ -89,14 +97,20 @@ export default function DayPlanner({
             dayId={day.id}
             stops={day.stops}
             tentativePlaces={candidates.filter((candidate) => candidate.coordinatesConfirmed)}
-            selectedStopId={selectedStopId}
-            onSelectStop={onSelectStop}
+            selectedPlaceId={selectedPlaceId}
+            onSelectPlace={onSelectPlace}
           />
           <div className="map-key">
             <span><i className="key-dot confirmed" />Confirmed</span>
             <span><i className="key-dot tentative" />Tentative</span>
-            <span><i className="key-line" />Confirmed route</span>
+            <span><i className="key-line" />Itinerary order</span>
           </div>
+          {selectedPlaceId && (
+            <div className="map-selection-card">
+              <strong>{[...day.stops, ...candidates].find((place) => place.id === selectedPlaceId)?.name}</strong>
+              <button type="button" onClick={() => onChangeMobileView("itinerary")}>View in itinerary</button>
+            </div>
+          )}
         </section>
       </div>
     </main>

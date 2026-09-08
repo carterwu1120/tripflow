@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const TYPE_LABELS = {
   hotel: "Hotel",
@@ -27,9 +27,10 @@ function coordinatesFromMapsUrl(value) {
   return { latitude, longitude };
 }
 
-export default function AddPlaceDialog({ initialPlace, presetType = "other", onClose, onSavePlace }) {
+export default function AddPlaceDialog({ initialPlace, presetType = "other", presetStatus = "confirmed", dayLabel, onClose, onSavePlace }) {
   const [type, setType] = useState(initialPlace?.type ?? presetType);
-  const [status, setStatus] = useState(initialPlace?.status === "tentative" ? "tentative" : "confirmed");
+  const [status, setStatus] = useState(initialPlace?.status ?? presetStatus);
+  const dialogRef = useRef(null);
   const [name, setName] = useState(initialPlace?.name ?? "");
   const [timeValue, setTimeValue] = useState(initialPlace?.time?.value ?? "");
   const [notes, setNotes] = useState(initialPlace?.notes ?? "");
@@ -43,11 +44,23 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", onC
   const [locationMessage, setLocationMessage] = useState("");
 
   useEffect(() => {
+    const previousFocus = document.activeElement;
     function closeOnEscape(event) {
       if (event.key === "Escape") onClose();
+      if (event.key === "Tab") {
+        const focusable = dialogRef.current?.querySelectorAll('button, input, select, [href], [tabindex]:not([tabindex="-1"])');
+        if (!focusable?.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
     }
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      previousFocus?.focus?.();
+    };
   }, [onClose]);
 
   function handleMapsUrl(value) {
@@ -81,7 +94,7 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", onC
         kind: hasTime ? initialPlace?.time?.kind === "fixed" ? "fixed" : "approximate" : "none",
         value: hasTime ? timeValue : null,
       },
-      durationMinutes: initialPlace?.durationMinutes ?? 60,
+      durationMinutes: initialPlace?.durationMinutes ?? null,
       openingHours: initialPlace?.openingHours ?? null,
       lastEntryTime: initialPlace?.lastEntryTime ?? null,
       notes: notes.trim(),
@@ -95,8 +108,9 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", onC
   }
 
   return (
-    <div className="dialog-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="dialog-backdrop" role="presentation">
       <section
+        ref={dialogRef}
         className="place-dialog quick-place-dialog"
         role="dialog"
         aria-modal="true"
@@ -107,6 +121,7 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", onC
           <div>
             <p className="eyebrow">{TYPE_LABELS[type] ?? "Place"}</p>
             <h2 id="place-editor-title">{initialPlace ? "Edit" : "Add"} {type === "hotel" ? "hotel" : "place"}</h2>
+            <p className="dialog-context">{dayLabel}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close dialog">×</button>
         </div>
@@ -129,8 +144,8 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", onC
             <fieldset className="status-choice">
               <legend>Status</legend>
               <div>
-                <button className={status === "confirmed" ? "active" : ""} type="button" onClick={() => setStatus("confirmed")}>Confirmed</button>
-                <button className={status === "tentative" ? "active tentative" : ""} type="button" onClick={() => setStatus("tentative")}>Tentative</button>
+                <button aria-pressed={status === "confirmed"} className={status === "confirmed" ? "active" : ""} type="button" onClick={() => setStatus("confirmed")}>Confirmed</button>
+                <button aria-pressed={status === "tentative"} className={status === "tentative" ? "active tentative" : ""} type="button" onClick={() => setStatus("tentative")}>Tentative</button>
               </div>
             </fieldset>
           </div>

@@ -10,16 +10,21 @@ export default function ItineraryTimeline({
   onEditStop,
 }) {
   const [draggedStopId, setDraggedStopId] = useState(null);
+  const [announcement, setAnnouncement] = useState("");
 
   function handleDrop(targetStopId) {
     if (draggedStopId && draggedStopId !== targetStopId) {
       onReorder(draggedStopId, targetStopId);
+      const targetIndex = day.stops.findIndex((stop) => stop.id === targetStopId);
+      const moved = day.stops.find((stop) => stop.id === draggedStopId);
+      setAnnouncement(`${moved?.name ?? "Place"} moved to position ${targetIndex + 1}`);
     }
     setDraggedStopId(null);
   }
 
   return (
     <div className="timeline">
+      <p className="sr-only" aria-live="polite">{announcement}</p>
       {day.stops.map((stop, index) => {
         const nextStop = day.stops[index + 1];
         const travelLeg = nextStop

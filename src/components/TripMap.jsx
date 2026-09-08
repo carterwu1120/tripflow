@@ -11,12 +11,12 @@ function markerIcon(order, selected) {
   });
 }
 
-function tentativeMarkerIcon(order) {
+function tentativeMarkerIcon(order, selected) {
   return L.divIcon({
     className: "tentative-marker-shell",
-    html: `<span class="tentative-marker"><b>T${order}</b></span>`,
-    iconSize: [38, 38],
-    iconAnchor: [19, 38],
+    html: `<span class="tentative-marker ${selected ? "is-selected" : ""}"><b>T${order}</b></span>`,
+    iconSize: selected ? [44, 44] : [38, 38],
+    iconAnchor: selected ? [22, 44] : [19, 38],
     popupAnchor: [0, -34],
   });
 }
@@ -25,7 +25,7 @@ function hasCoordinates(place) {
   return Number.isFinite(place?.latitude) && Number.isFinite(place?.longitude);
 }
 
-export default function TripMap({ dayId, stops, tentativePlaces, selectedStopId, onSelectStop }) {
+export default function TripMap({ dayId, stops, tentativePlaces, selectedPlaceId, onSelectPlace }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
@@ -95,7 +95,7 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedStopId,
     mappedStops.forEach((stop) => {
       const index = stops.findIndex(({ id }) => id === stop.id);
       const marker = L.marker([stop.latitude, stop.longitude], {
-        icon: markerIcon(index + 1, stop.id === selectedStopId),
+        icon: markerIcon(index + 1, stop.id === selectedPlaceId),
         riseOnHover: true,
         title: `${index + 1}. ${stop.name}`,
       });
@@ -105,13 +105,13 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedStopId,
         offset: [0, -28],
         opacity: 0.95,
       });
-      marker.on("click", () => onSelectStop(stop.id));
+      marker.on("click", () => onSelectPlace(stop.id));
       marker.addTo(markerLayer);
     });
 
     tentativePlaces.filter(hasCoordinates).forEach((place, index) => {
       const marker = L.marker([place.latitude, place.longitude], {
-        icon: tentativeMarkerIcon(index + 1),
+        icon: tentativeMarkerIcon(index + 1, place.id === selectedPlaceId),
         riseOnHover: true,
         title: `Tentative ${index + 1}: ${place.name}`,
       });
@@ -120,6 +120,7 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedStopId,
         offset: [0, -30],
         opacity: 0.95,
       });
+      marker.on("click", () => onSelectPlace(place.id));
       marker.addTo(markerLayer);
     });
 
@@ -129,15 +130,15 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedStopId,
       hasFitBoundsRef.current = true;
     }
 
-    const selectedStop = stops.find((stop) => stop.id === selectedStopId);
-    if (hasCoordinates(selectedStop)) {
+    const selectedPlace = [...stops, ...tentativePlaces].find((place) => place.id === selectedPlaceId);
+    if (hasCoordinates(selectedPlace)) {
       map.flyTo(
-        [selectedStop.latitude, selectedStop.longitude],
+        [selectedPlace.latitude, selectedPlace.longitude],
         Math.max(map.getZoom(), 13),
         { duration: 0.65 },
       );
     }
-  }, [dayId, stops, tentativePlaces, selectedStopId, onSelectStop]);
+  }, [dayId, stops, tentativePlaces, selectedPlaceId, onSelectPlace]);
 
   return <div className="map-container" ref={containerRef} />;
 }

@@ -48,7 +48,6 @@ export default function TripStopCard({
     <article
       ref={cardRef}
       className={`stop-card ${isSelected ? "selected" : ""} ${isDragging ? "dragging" : ""}`}
-      onClick={onSelect}
       onDragOver={onDragOver}
       onDrop={onDrop}
       aria-current={isSelected ? "step" : undefined}
@@ -56,16 +55,17 @@ export default function TripStopCard({
       <div className="order-column">
         <span className="order-number">{order}</span>
         {isEditable && (
-          <span
+          <button
+            type="button"
             className="drag-handle"
             draggable
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             title="Drag to reorder"
-            aria-label={`Drag ${stop.name} to reorder`}
+            aria-label={`Drag ${stop.name} to reorder. Use move buttons for keyboard reordering.`}
           >
             ⠿
-          </span>
+          </button>
         )}
       </div>
 
@@ -77,7 +77,7 @@ export default function TripStopCard({
         </div>
         <h2>{stop.name}</h2>
         <p className="stop-meta">
-          {stop.durationMinutes} min
+          {Number.isFinite(stop.durationMinutes) ? `${stop.durationMinutes} min` : "Duration not set"}
           {stop.openingHours && <><span>·</span>{stop.openingHours}</>}
         </p>
         {stop.notes && <p className="stop-notes">{stop.notes}</p>}
@@ -95,6 +95,7 @@ export default function TripStopCard({
           >
             Open in Google Maps ↗
           </a>
+          <button className="show-on-map-button" type="button" onClick={onSelect}>Show on map</button>
         </div>
 
         {isEditable && (
@@ -106,9 +107,7 @@ export default function TripStopCard({
               <button
                 className="remove-button"
                 type="button"
-                onClick={() => {
-                  if (window.confirm(`Delete ${stop.name}?`)) onRemove();
-                }}
+                onClick={onRemove}
               >
                 Delete
               </button>

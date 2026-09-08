@@ -1,26 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import AddPlaceDialog from "./components/AddPlaceDialog";
 import DayPlanner from "./components/DayPlanner";
 import { initialCandidates, initialTrip } from "./data/okinawaDay3";
+import { normalizePlan, planReducer } from "./domain/plan";
 
 const STORAGE_KEY = "tripflow-okinawa-2027-v2";
-
-function normalizePlan(value) {
-  return {
-    ...value,
-    trip: {
-      ...value.trip,
-      days: value.trip.days.map((day) => ({
-        ...day,
-        stops: day.stops.map((stop) => ({ ...stop, status: "confirmed" })),
-      })),
-    },
-    candidates: (value.candidates ?? []).map((place) => ({
-      ...place,
-      status: "tentative",
-    })),
-  };
-}
 
 function loadPlan() {
   try {
@@ -33,21 +17,11 @@ function loadPlan() {
   }
 }
 
-function reorderStops(stops, draggedStopId, targetStopId) {
-  const fromIndex = stops.findIndex((stop) => stop.id === draggedStopId);
-  const targetIndex = stops.findIndex((stop) => stop.id === targetStopId);
-  if (fromIndex < 0 || targetIndex < 0 || fromIndex === targetIndex) return stops;
-
-  const reordered = [...stops];
-  const [movedStop] = reordered.splice(fromIndex, 1);
-  reordered.splice(targetIndex, 0, movedStop);
-  return reordered;
-}
-
 export default function App() {
-  const [plan, setPlan] = useState(loadPlan);
+  const [planState, dispatch] = useReducer(planReducer, null, () => ({ present: loadPlan(), past: [], notice: null }));
+  const plan = planState.present;
   const [selectedDayId, setSelectedDayId] = useState(() => initialTrip.days[0].id);
-  const [selectedStopId, setSelectedStopId] = useState(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState(null);
   const [mobileView, setMobileView] = useState("itinerary");
   const [placeEditor, setPlaceEditor] = useState(null);
 
@@ -62,84 +36,28 @@ export default function App() {
   }, [plan]);
 
   useEffect(() => {
-    if (selectedStopId && !day.stops.some((stop) => stop.id === selectedStopId)) {
-      setSelectedStopId(null);
+    if (selectedPlaceId && !day.stops.some((stop) => stop.id === selectedPlaceId)
+      && !tentativePlaces.some((place) => place.id === selectedPlaceId)) {
+      setSelectedPlaceId(null);
     }
-  }, [day.stops, selectedStopId]);
-
-  const updateDay = useCallback((updater) => {
-    setPlan((currentPlan) => ({
-      ...currentPlan,
-      trip: {
-        ...currentPlan.trip,
-        days: currentPlan.trip.days.map((candidateDay) =>
-          candidateDay.id === selectedDayId ? updater(candidateDay) : candidateDay
-        ),
-      },
-    }));
-  }, [selectedDayId]);
+  }, [day.stops, selectedPlaceId, tentativePlaces]);
 
   function handleReorder(draggedStopId, targetStopId) {
-    updateDay((currentDay) => ({
-      ...currentDay,
-      stops: reorderStops(currentDay.stops, draggedStopId, targetStopId),
-    }));
+    dispatch({ type: "reorder", dayId: selectedDayId, draggedStopId, targetStopId });
   }
 
   function handleRemoveStop(stopId) {
-    updateDay((currentDay) => ({
-      ...currentDay,
-      stops: currentDay.stops.filter((stop) => stop.id !== stopId),
-    }));
+    dispatch({ type: "remove-stop", dayId: selectedDayId, placeId: stopId });
   }
 
   function handleRemoveTentative(placeId) {
-    setPlan((currentPlan) => ({
-      ...currentPlan,
-      candidates: currentPlan.candidates.filter((candidate) => candidate.id !== placeId),
-    }));
+    dispatch({ type: "remove-tentative", placeId });
   }
 
   function handleSavePlace(place) {
-    setPlan((currentPlan) => {
-      const candidatesWithoutPlace = currentPlan.candidates.filter(({ id }) => id !== place.id);
-      const daysWithoutPlace = currentPlan.trip.days.map((candidateDay) => ({
-        ...candidateDay,
-        stops: candidateDay.stops.filter(({ id }) => id !== place.id),
-      }));
-
-      if (place.status === "tentative") {
-        return {
-          ...currentPlan,
-          trip: { ...currentPlan.trip, days: daysWithoutPlace },
-          candidates: [
-            ...candidatesWithoutPlace,
-            { ...place, suggestedDayId: selectedDayId, status: "tentative" },
-          ],
-        };
-      }
-
-      const { suggestedDayId: _suggestedDayId, ...confirmedPlace } = place;
-      const originalIndex = day.stops.findIndex(({ id }) => id === place.id);
-      return {
-        ...currentPlan,
-        trip: {
-          ...currentPlan.trip,
-          days: daysWithoutPlace.map((candidateDay) => {
-            if (candidateDay.id !== selectedDayId) return candidateDay;
-            const nextStops = [...candidateDay.stops];
-            nextStops.splice(originalIndex >= 0 ? originalIndex : nextStops.length, 0, {
-              ...confirmedPlace,
-              status: "confirmed",
-            });
-            return { ...candidateDay, stops: nextStops };
-          }),
-        },
-        candidates: candidatesWithoutPlace,
-      };
-    });
+    dispatch({ type: "save-place", dayId: selectedDayId, place });
     setPlaceEditor(null);
-    setSelectedStopId(place.status === "confirmed" ? place.id : null);
+    setSelectedPlaceId(place.id);
   }
 
   return (
@@ -163,22 +81,34 @@ export default function App() {
         candidates={tentativePlaces}
         onSelectDay={(dayId) => {
           setSelectedDayId(dayId);
-          setSelectedStopId(null);
+          setSelectedPlaceId(null);
         }}
-        selectedStopId={selectedStopId}
-        onSelectStop={setSelectedStopId}
+        selectedPlaceId={selectedPlaceId}
+        onSelectPlace={setSelectedPlaceId}
         onReorder={handleReorder}
         onRemoveStop={handleRemoveStop}
         onEditStop={(stop) => setPlaceEditor({ kind: "confirmed", place: stop })}
         onEditCandidate={(candidate) => setPlaceEditor({ kind: "tentative", place: candidate })}
         onRemoveCandidate={handleRemoveTentative}
+        onConfirmCandidate={(candidate) => handleSavePlace({ ...candidate, status: "confirmed" })}
+        onAddTentative={() => setPlaceEditor({ kind: "new", place: null, presetStatus: "tentative" })}
         mobileView={mobileView}
         onChangeMobileView={setMobileView}
       />
 
+      {planState.notice && (
+        <div className="undo-bar" role="status">
+          <span>{planState.notice}</span>
+          {planState.past.length > 0 && <button type="button" onClick={() => dispatch({ type: "undo" })}>Undo</button>}
+          <button type="button" className="undo-dismiss" aria-label="Dismiss" onClick={() => dispatch({ type: "clear-notice" })}>×</button>
+        </div>
+      )}
+
       {placeEditor && (
         <AddPlaceDialog
           initialPlace={placeEditor.place}
+          presetStatus={placeEditor.presetStatus}
+          dayLabel={`Day ${day.dayNumber} · ${day.dateLabel}`}
           onClose={() => setPlaceEditor(null)}
           onSavePlace={handleSavePlace}
         />
