@@ -8,7 +8,7 @@ const stop = (details) => ({
   notes: "",
   reservationRequired: false,
   coordinatesConfirmed: false,
-  status: "planned",
+  status: "confirmed",
   ...details,
   googleMapsUrl: details.googleMapsUrl ?? mapsUrl(`${details.name} Okinawa`),
 });
@@ -155,7 +155,7 @@ export const initialTrip = {
 };
 
 export const initialCandidates = [
-  stop({ id: "candidate-senaga-island", suggestedDayId: "day-2", name: "瀨長島 Umikaji Terrace", type: "attraction", latitude: 26.1748, longitude: 127.6464, coordinatesConfirmed: true, time: { kind: "approximate", value: "17:45" }, durationMinutes: 75, notes: "Day 2 備選；傍晚看夕陽。", status: "backup" }),
-  stop({ id: "candidate-mitsuya-onna", suggestedDayId: "day-4", name: "三矢本舗 恩納店", type: "restaurant", latitude: 26.497, longitude: 127.853, time: { kind: "none", value: null }, durationMinutes: 25, notes: "Day 4 南下途中備選；購買沙翁。店址待確認。", status: "backup" }),
-  stop({ id: "candidate-kushiyaki-can", suggestedDayId: "day-4", name: "Kushiyaki Can クシヤキCan", type: "restaurant", latitude: 26.2152, longitude: 127.6877, time: { kind: "none", value: null }, durationMinutes: 75, openingHours: "17:30–24:00", notes: "若豬排來不及，改吃這間備案串燒；店址待確認。", status: "backup" }),
+  stop({ id: "candidate-senaga-island", suggestedDayId: "day-2", name: "瀨長島 Umikaji Terrace", type: "attraction", latitude: 26.1748, longitude: 127.6464, coordinatesConfirmed: true, time: { kind: "approximate", value: "17:45" }, durationMinutes: 75, notes: "Day 2 備選；傍晚看夕陽。", status: "tentative" }),
+  stop({ id: "candidate-mitsuya-onna", suggestedDayId: "day-4", name: "三矢本舗 恩納店", type: "restaurant", latitude: 26.497, longitude: 127.853, time: { kind: "none", value: null }, durationMinutes: 25, notes: "Day 4 南下途中備選；購買沙翁。店址待確認。", status: "tentative" }),
+  stop({ id: "candidate-kushiyaki-can", suggestedDayId: "day-4", name: "Kushiyaki Can クシヤキCan", type: "restaurant", latitude: 26.2152, longitude: 127.6877, time: { kind: "none", value: null }, durationMinutes: 75, openingHours: "17:30–24:00", notes: "若豬排來不及，改吃這間備案串燒；店址待確認。", status: "tentative" }),
 ];

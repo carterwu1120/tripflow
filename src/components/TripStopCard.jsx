@@ -21,7 +21,7 @@ export default function TripStopCard({
   order,
   isSelected,
   onSelect,
-  isDraft,
+  isEditable,
   isDragging,
   onDragStart,
   onDragEnd,
@@ -55,7 +55,7 @@ export default function TripStopCard({
     >
       <div className="order-column">
         <span className="order-number">{order}</span>
-        {isDraft && (
+        {isEditable && (
           <span
             className="drag-handle"
             draggable
@@ -72,6 +72,7 @@ export default function TripStopCard({
       <div className="stop-content">
         <div className="stop-topline">
           <span className={`type-badge type-${stop.type}`}>{TYPE_LABELS[stop.type] ?? "Activity"}</span>
+          <span className="status-badge confirmed">Confirmed</span>
           <span className={`time-label time-${timeKind}`}>{formatTime(stop.time)}</span>
         </div>
         <h2>{stop.name}</h2>
@@ -96,13 +97,21 @@ export default function TripStopCard({
           </a>
         </div>
 
-        {isDraft && (
+        {isEditable && (
           <div className="stop-editor" onClick={(event) => event.stopPropagation()}>
             <div className="editor-actions">
               <button type="button" onClick={onEdit}>Edit</button>
               <button type="button" onClick={onMoveUp} disabled={!canMoveUp} aria-label="Move stop up">↑</button>
               <button type="button" onClick={onMoveDown} disabled={!canMoveDown} aria-label="Move stop down">↓</button>
-              <button className="remove-button" type="button" onClick={onRemove}>Remove</button>
+              <button
+                className="remove-button"
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Delete ${stop.name}?`)) onRemove();
+                }}
+              >
+                Delete
+              </button>
             </div>
           </div>
         )}

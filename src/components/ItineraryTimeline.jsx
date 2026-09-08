@@ -5,7 +5,6 @@ export default function ItineraryTimeline({
   day,
   selectedStopId,
   onSelectStop,
-  isDraft,
   onReorder,
   onRemoveStop,
   onEditStop,
@@ -36,7 +35,7 @@ export default function ItineraryTimeline({
               order={index + 1}
               isSelected={selectedStopId === stop.id}
               onSelect={() => onSelectStop(stop.id)}
-              isDraft={isDraft}
+              isEditable
               isDragging={draggedStopId === stop.id}
               onDragStart={(event) => {
                 event.dataTransfer.effectAllowed = "move";
@@ -45,7 +44,7 @@ export default function ItineraryTimeline({
               }}
               onDragEnd={() => setDraggedStopId(null)}
               onDragOver={(event) => {
-                if (isDraft) event.preventDefault();
+                event.preventDefault();
               }}
               onDrop={() => handleDrop(stop.id)}
               onMoveUp={() => index > 0 && onReorder(stop.id, day.stops[index - 1].id)}

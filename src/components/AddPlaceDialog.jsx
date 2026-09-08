@@ -28,6 +28,8 @@ function coordinatesFromMapsUrl(value) {
 }
 
 export default function AddPlaceDialog({ initialPlace, presetType = "other", onClose, onSavePlace }) {
+  const [type, setType] = useState(initialPlace?.type ?? presetType);
+  const [status, setStatus] = useState(initialPlace?.status === "tentative" ? "tentative" : "confirmed");
   const [name, setName] = useState(initialPlace?.name ?? "");
   const [timeValue, setTimeValue] = useState(initialPlace?.time?.value ?? "");
   const [notes, setNotes] = useState(initialPlace?.notes ?? "");
@@ -39,7 +41,6 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", onC
     return null;
   });
   const [locationMessage, setLocationMessage] = useState("");
-  const type = initialPlace?.type ?? presetType;
 
   useEffect(() => {
     function closeOnEscape(event) {
@@ -73,6 +74,7 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", onC
       id: initialPlace?.id ?? `candidate-${Date.now()}`,
       name: name.trim(),
       type,
+      status,
       latitude: coordinates?.latitude ?? null,
       longitude: coordinates?.longitude ?? null,
       time: {
@@ -89,7 +91,6 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", onC
         : Boolean(coordinates),
       googleMapsUrl: mapsUrl.trim()
         || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} Okinawa`)}`,
-      status: initialPlace?.status ?? "candidate",
     });
   }
 
@@ -111,6 +112,32 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", onC
         </div>
 
         <form className="quick-place-form" onSubmit={handleSubmit}>
+          <div className="quick-choice-row">
+            <label>
+              Type
+              <select value={type} onChange={(event) => setType(event.target.value)}>
+                <option value="other">Place</option>
+                <option value="attraction">Attraction</option>
+                <option value="restaurant">Food</option>
+                <option value="hotel">Hotel</option>
+                <option value="shopping">Shopping</option>
+                <option value="rest-stop">Rest stop</option>
+                <option value="rental-car">Rental car</option>
+                <option value="airport">Airport</option>
+              </select>
+            </label>
+            <fieldset className="status-choice">
+              <legend>Status</legend>
+              <div>
+                <button className={status === "confirmed" ? "active" : ""} type="button" onClick={() => setStatus("confirmed")}>Confirmed</button>
+                <button className={status === "tentative" ? "active tentative" : ""} type="button" onClick={() => setStatus("tentative")}>Tentative</button>
+              </div>
+            </fieldset>
+          </div>
+          <p className="status-explanation">
+            {status === "confirmed" ? "Included in the itinerary route." : "Shown on the map for comparison, but not added to the route."}
+          </p>
+
           <label>
             Place
             <input value={name} onChange={(event) => setName(event.target.value)} placeholder={type === "hotel" ? "Hotel name" : "Where do you want to go?"} autoFocus required />

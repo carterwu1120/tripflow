@@ -11,10 +11,10 @@ function markerIcon(order, selected) {
   });
 }
 
-function hotelMarkerIcon(order) {
+function tentativeMarkerIcon(order) {
   return L.divIcon({
-    className: "hotel-marker-shell",
-    html: `<span class="hotel-marker"><b>H${order}</b></span>`,
+    className: "tentative-marker-shell",
+    html: `<span class="tentative-marker"><b>T${order}</b></span>`,
     iconSize: [38, 38],
     iconAnchor: [19, 38],
     popupAnchor: [0, -34],
@@ -25,14 +25,14 @@ function hasCoordinates(place) {
   return Number.isFinite(place?.latitude) && Number.isFinite(place?.longitude);
 }
 
-export default function TripMap({ dayId, stops, hotelCandidates, selectedStopId, onSelectStop }) {
+export default function TripMap({ dayId, stops, tentativePlaces, selectedStopId, onSelectStop }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
   const routeRef = useRef(null);
   const hasFitBoundsRef = useRef(false);
   const renderedDayIdRef = useRef(null);
-  const renderedHotelsRef = useRef("");
+  const renderedTentativesRef = useRef("");
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return undefined;
@@ -74,12 +74,12 @@ export default function TripMap({ dayId, stops, hotelCandidates, selectedStopId,
 
     const mappedStops = stops.filter(hasCoordinates);
     const coordinates = mappedStops.map((stop) => [stop.latitude, stop.longitude]);
-    const hotelCoordinates = hotelCandidates.filter(hasCoordinates).map((hotel) => [hotel.latitude, hotel.longitude]);
-    const hotelSignature = hotelCandidates.map((hotel) => `${hotel.id}:${hotel.latitude}:${hotel.longitude}`).join("|");
+    const tentativeCoordinates = tentativePlaces.filter(hasCoordinates).map((place) => [place.latitude, place.longitude]);
+    const tentativeSignature = tentativePlaces.map((place) => `${place.id}:${place.latitude}:${place.longitude}`).join("|");
 
-    if (renderedDayIdRef.current !== dayId || renderedHotelsRef.current !== hotelSignature) {
+    if (renderedDayIdRef.current !== dayId || renderedTentativesRef.current !== tentativeSignature) {
       renderedDayIdRef.current = dayId;
-      renderedHotelsRef.current = hotelSignature;
+      renderedTentativesRef.current = tentativeSignature;
       hasFitBoundsRef.current = false;
     }
 
@@ -109,13 +109,13 @@ export default function TripMap({ dayId, stops, hotelCandidates, selectedStopId,
       marker.addTo(markerLayer);
     });
 
-    hotelCandidates.filter(hasCoordinates).forEach((hotel, index) => {
-      const marker = L.marker([hotel.latitude, hotel.longitude], {
-        icon: hotelMarkerIcon(index + 1),
+    tentativePlaces.filter(hasCoordinates).forEach((place, index) => {
+      const marker = L.marker([place.latitude, place.longitude], {
+        icon: tentativeMarkerIcon(index + 1),
         riseOnHover: true,
-        title: `Hotel candidate ${index + 1}: ${hotel.name}`,
+        title: `Tentative ${index + 1}: ${place.name}`,
       });
-      marker.bindTooltip(`H${index + 1} · ${hotel.name}`, {
+      marker.bindTooltip(`T${index + 1} · ${place.name}`, {
         direction: "top",
         offset: [0, -30],
         opacity: 0.95,
@@ -123,7 +123,7 @@ export default function TripMap({ dayId, stops, hotelCandidates, selectedStopId,
       marker.addTo(markerLayer);
     });
 
-    const visibleCoordinates = [...coordinates, ...hotelCoordinates];
+    const visibleCoordinates = [...coordinates, ...tentativeCoordinates];
     if (!hasFitBoundsRef.current && visibleCoordinates.length) {
       map.fitBounds(visibleCoordinates, { padding: [60, 60] });
       hasFitBoundsRef.current = true;
@@ -137,7 +137,7 @@ export default function TripMap({ dayId, stops, hotelCandidates, selectedStopId,
         { duration: 0.65 },
       );
     }
-  }, [dayId, stops, hotelCandidates, selectedStopId, onSelectStop]);
+  }, [dayId, stops, tentativePlaces, selectedStopId, onSelectStop]);
 
   return <div className="map-container" ref={containerRef} />;
 }

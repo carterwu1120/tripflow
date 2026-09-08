@@ -9,13 +9,11 @@ export default function DayPlanner({
   onSelectDay,
   selectedStopId,
   onSelectStop,
-  isDraft,
   onReorder,
   onRemoveStop,
   onEditStop,
-  onAddCandidateToDay,
   onEditCandidate,
-  onOpenAddPlace,
+  onRemoveCandidate,
   mobileView,
   onChangeMobileView,
 }) {
@@ -66,18 +64,10 @@ export default function DayPlanner({
             <span className="stop-count">{day.stops.length} stops</span>
           </div>
 
-          {isDraft && (
-            <div className="draft-notice" role="status">
-              <span>Draft workspace</span>
-              Drag stops or use the arrow buttons. Nothing changes until you apply.
-            </div>
-          )}
-
           <ItineraryTimeline
             day={day}
             selectedStopId={selectedStopId}
             onSelectStop={onSelectStop}
-            isDraft={isDraft}
             onReorder={onReorder}
             onRemoveStop={onRemoveStop}
             onEditStop={onEditStop}
@@ -86,10 +76,8 @@ export default function DayPlanner({
           <CandidatePlaces
             candidates={candidates}
             dayNumber={day.dayNumber}
-            isDraft={isDraft}
-            onAddToDay={onAddCandidateToDay}
             onEditCandidate={onEditCandidate}
-            onOpenAddPlace={onOpenAddPlace}
+            onRemoveCandidate={onRemoveCandidate}
           />
         </section>
 
@@ -100,16 +88,14 @@ export default function DayPlanner({
           <TripMap
             dayId={day.id}
             stops={day.stops}
-            hotelCandidates={candidates.filter((candidate) =>
-              candidate.type === "hotel" && candidate.coordinatesConfirmed
-            )}
+            tentativePlaces={candidates.filter((candidate) => candidate.coordinatesConfirmed)}
             selectedStopId={selectedStopId}
             onSelectStop={onSelectStop}
           />
           <div className="map-key">
-            <span><i className="key-dot selected" />Selected stop</span>
-            <span><i className="key-dot hotel" />Hotel candidate</span>
-            <span><i className="key-line" />Planned order</span>
+            <span><i className="key-dot confirmed" />Confirmed</span>
+            <span><i className="key-dot tentative" />Tentative</span>
+            <span><i className="key-line" />Confirmed route</span>
           </div>
         </section>
       </div>

@@ -13,33 +13,30 @@ TripFlow 是一個可重複使用的互動式旅程規劃工具。它把每日�
 - 使用 Leaflet 顯示編號圖釘與行程順序線
 - 點擊行程會選取並聚焦對應圖釘
 - 點擊圖釘會選取並捲動到對應行程
-- Official Plan 與 Draft Mode 分離
-- Draft Mode 可拖放排序、上下移動、修改時間及移除地點
-- 每天各自顯示候選／備選地點，並可加入當天行程
-- 可使用模擬搜尋或 Google Maps URL 儲存候選地點
+- 每個地點可標示為 Confirmed（確定）或 Tentative（暫定）
+- 確定地點可直接拖放排序、上下移動、編輯及刪除
+- 暫定地點只用於清單與地圖比較，不會加入確定路線
+- 使用單一入口新增各種類型及狀態的地點
 - 使用精簡表單新增或編輯地點名稱、大約時間及單行註記
 - 完整 Google Maps URL 若包含座標，可自動帶入經緯度
-- 候選飯店若可取得位置，會直接以獨立圖釘顯示在當日地圖上
-- Apply Changes 會以草稿取代正式行程
-- Discard 會捨棄所有草稿變更
-- 使用 `localStorage` 保存正式行程與候選地點
+- 暫定地點若可取得位置，會以獨立圖釘顯示在當日地圖上
+- 使用 `localStorage` 即時保存行程與暫定地點
 - 手機版可在 Itinerary 與 Map 模式之間切換
 
 ## 畫面與操作方式
 
 桌面版左側是行程時間軸，右側是地圖。行程仍是主要操作區域，地圖只提供位置與順序上的脈絡。
 
-正式行程預設不能直接修改。按下 **Edit Plan** 後，TripFlow 會複製目前的正式資料建立草稿：
+新增及編輯共用同一個精簡表單。狀態決定地點在行程中的作用：
 
 ```mermaid
 flowchart LR
-    A[Official Plan] -->|Edit Plan| B[Draft]
-    B -->|Reorder / Add / Remove / Change time| B
-    B -->|Discard| A
-    B -->|Apply Changes| C[New Official Plan]
+    A[Add or edit place] --> B{Status}
+    B -->|Confirmed| C[Itinerary order and route]
+    B -->|Tentative| D[Comparison list and map marker]
 ```
 
-候選地點也包含在草稿快照內。因此，把候選地點移入行程後再按 Discard，原本的行程和候選清單都會一起恢復。
+地點可隨時在 Confirmed 與 Tentative 之間切換。所有變更會立即寫入瀏覽器的 `localStorage`。
 
 ## 資料模型
 
@@ -134,7 +131,6 @@ src/
 - 建立、重新命名或刪除旅程與日期
 - 把地點移動到其他日期
 - 編輯兩個地點之間的交通方式與交通時間
-- Candidate 與 Backup 狀態的完整管理介面
 - 匯入、匯出及分享行程
 - localStorage 資料格式升級與 migration 機制
 
@@ -148,14 +144,14 @@ src/
 - 交通狀況及即時導航
 - 驗證匯入行程中尚未確認的店址、座標、營業時間與飯店資訊
 
-貼入 Google Maps URL 所建立的候選地點，現在會暫時使用沖繩中心座標，並標記為需要確認。這是尚未接入地點 API 時的暫時行為。
+完整 Google Maps URL 若包含座標，暫定地點就會顯示在地圖上；無法解析的短網址仍可保存，但在接入地點服務前不會產生圖釘。
 
 ### 協作與智慧功能
 
 - 後端與雲端資料庫
 - 登入及使用者帳號
 - 多人即時協作
-- 多版本草稿及修改歷史
+- 修改歷史
 - AI 建議
 - 自動最佳化行程順序
 
@@ -172,4 +168,4 @@ src/
 
 ## 建議的下一步
 
-適合下一個練習項目的是「交通時間編輯器」：點擊兩個 TripStop 之間的交通區段，修改交通方式與分鐘數。這個功能範圍小，同時可以練習 controlled inputs、不可變資料更新，以及管理兩個實體之間的關聯。
+下一個實用項目是接入地點搜尋或短網址解析服務，讓使用者只貼 Google Maps 分享連結，就能取得正確座標並立即在地圖比較確定與暫定地點。

@@ -685,6 +685,17 @@ h3 {
   background: var(--green-soft);
 }
 
+.candidate-actions .candidate-delete-button {
+  color: #9c4837;
+  background: white;
+  border-color: #efc4b9;
+}
+
+.candidate-actions .candidate-delete-button:hover {
+  color: white;
+  background: #9c4837;
+}
+
 .hotel-distance {
   display: grid;
   gap: 3px;
@@ -1215,17 +1226,17 @@ h3 {
   flex-wrap: wrap;
 }
 
-.key-dot.hotel {
+.key-dot.tentative {
   background: #7957a8;
   box-shadow: 0 0 0 3px rgba(121, 87, 168, 0.18);
 }
 
-.hotel-marker-shell {
+.tentative-marker-shell {
   background: transparent;
   border: 0;
 }
 
-.hotel-marker {
+.tentative-marker {
   width: 38px;
   height: 38px;
   display: grid;
@@ -1240,7 +1251,7 @@ h3 {
   transform: rotate(-45deg);
 }
 
-.hotel-marker b {
+.tentative-marker b {
   transform: rotate(45deg);
 }
 
@@ -1279,6 +1290,100 @@ h3 {
   font-size: 13px;
 }
 
+.quick-place-form select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  color: var(--ink);
+  background: white;
+  border: 1px solid #cdd5cf;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.quick-choice-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 12px;
+}
+
+.status-choice {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.status-choice legend {
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-choice div {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  background: #eeefe9;
+  border-radius: 9px;
+}
+
+.status-choice button {
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-choice button.active {
+  color: white;
+  background: var(--green);
+}
+
+.status-choice button.active.tentative {
+  background: #7957a8;
+}
+
+.status-explanation {
+  margin: -8px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.status-badge {
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.status-badge.confirmed {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.status-badge.tentative {
+  color: #67428d;
+  background: #eee5f7;
+}
+
+.candidate-labels {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tentative-card {
+  border-color: #bda9d1;
+  background: rgba(248, 243, 253, 0.66);
+}
+
 .maps-link-field {
   margin-top: 3px;
   padding-top: 16px;
@@ -1309,5 +1414,9 @@ h3 {
     width: 100%;
     justify-content: flex-end;
     flex-wrap: wrap;
+  }
+
+  .quick-choice-row {
+    grid-template-columns: 1fr;
   }
 }
