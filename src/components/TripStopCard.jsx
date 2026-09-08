@@ -33,6 +33,7 @@ export default function TripStopCard({
   canMoveDown,
   onRemove,
   onChangeTime,
+  onEdit,
 }) {
   const cardRef = useRef(null);
 
@@ -125,6 +126,7 @@ export default function TripStopCard({
               )}
             </div>
             <div className="editor-actions">
+              <button type="button" onClick={onEdit}>Edit details</button>
               <button type="button" onClick={onMoveUp} disabled={!canMoveUp} aria-label="Move stop up">↑</button>
               <button type="button" onClick={onMoveDown} disabled={!canMoveDown} aria-label="Move stop down">↓</button>
               <button className="remove-button" type="button" onClick={onRemove}>Remove</button>

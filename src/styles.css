@@ -32,7 +32,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -49,6 +50,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
 [draggable]:focus-visible {
   outline: 3px solid rgba(238, 120, 95, 0.4);
   outline-offset: 2px;
@@ -663,6 +665,48 @@ h3 {
   font-size: 11px;
 }
 
+.candidate-content {
+  min-width: 0;
+}
+
+.candidate-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.candidate-actions .secondary-button {
+  color: var(--green);
+  background: white;
+}
+
+.candidate-actions .secondary-button:hover {
+  background: var(--green-soft);
+}
+
+.hotel-distance {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  color: var(--green-dark);
+  background: var(--green-soft);
+  border-radius: 8px;
+  font-size: 10px;
+}
+
+.hotel-distance strong,
+.hotel-distance span,
+.hotel-distance small {
+  display: block;
+}
+
+.hotel-distance small {
+  margin-top: 2px;
+  color: var(--muted);
+}
+
 .edit-hint {
   flex: none;
   color: #84908c;
@@ -812,6 +856,81 @@ h3 {
   display: grid;
   gap: 7px;
   margin-top: 24px;
+}
+
+.place-editor-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.place-editor-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.place-editor-form input,
+.place-editor-form select,
+.place-editor-form textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: white;
+  border: 1px solid #cdd5cf;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.place-editor-form textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.form-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.form-grid.two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid.three-columns {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.place-editor-form .checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.place-editor-form .checkbox-field input {
+  width: 16px;
+  min-height: 16px;
+}
+
+.form-help {
+  color: var(--muted);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.compact-results {
+  max-height: 132px;
+  overflow-y: auto;
 }
 
 .input-row {
@@ -1014,6 +1133,12 @@ h3 {
     flex-direction: column;
   }
 
+  .candidate-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
   .candidate-card button,
   .edit-hint {
     align-self: flex-end;
@@ -1026,6 +1151,11 @@ h3 {
 
   .place-dialog {
     padding: 21px;
+  }
+
+  .form-grid.two-columns,
+  .form-grid.three-columns {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -35,7 +35,7 @@ export default function App() {
   const [selectedDayId, setSelectedDayId] = useState(() => initialTrip.days[0].id);
   const [selectedStopId, setSelectedStopId] = useState(null);
   const [mobileView, setMobileView] = useState("itinerary");
-  const [isAddPlaceOpen, setIsAddPlaceOpen] = useState(false);
+  const [placeEditor, setPlaceEditor] = useState(null);
 
   const visiblePlan = draft ?? savedPlan;
   const days = visiblePlan.trip.days;
@@ -176,7 +176,33 @@ export default function App() {
         candidates: [...currentPlan.candidates, candidateForDay],
       }));
     }
-    setIsAddPlaceOpen(false);
+    setPlaceEditor(null);
+  }
+
+  function handleSavePlace(place) {
+    if (placeEditor?.kind === "stop") {
+      updateDraftDay((currentDay) => ({
+        ...currentDay,
+        stops: currentDay.stops.map((stop) => stop.id === place.id ? place : stop),
+      }));
+      setPlaceEditor(null);
+      return;
+    }
+
+    if (placeEditor?.kind === "candidate") {
+      const updateCandidate = (currentPlan) => ({
+        ...currentPlan,
+        candidates: currentPlan.candidates.map((candidate) =>
+          candidate.id === place.id ? { ...place, suggestedDayId: selectedDayId } : candidate
+        ),
+      });
+      if (isDraft) setDraft(updateCandidate);
+      else setSavedPlan(updateCandidate);
+      setPlaceEditor(null);
+      return;
+    }
+
+    handleSaveCandidate(place);
   }
 
   const statusText = useMemo(
@@ -228,16 +254,19 @@ export default function App() {
         onReorder={handleReorder}
         onRemoveStop={handleRemoveStop}
         onChangeTime={handleChangeTime}
+        onEditStop={(stop) => setPlaceEditor({ kind: "stop", place: stop })}
         onAddCandidateToDay={handleAddCandidateToDay}
-        onOpenAddPlace={() => setIsAddPlaceOpen(true)}
+        onEditCandidate={(candidate) => setPlaceEditor({ kind: "candidate", place: candidate })}
+        onOpenAddPlace={() => setPlaceEditor({ kind: "new", place: null })}
         mobileView={mobileView}
         onChangeMobileView={setMobileView}
       />
 
-      {isAddPlaceOpen && (
+      {placeEditor && (
         <AddPlaceDialog
-          onClose={() => setIsAddPlaceOpen(false)}
-          onSaveCandidate={handleSaveCandidate}
+          initialPlace={placeEditor.place}
+          onClose={() => setPlaceEditor(null)}
+          onSavePlace={handleSavePlace}
         />
       )}
     </div>

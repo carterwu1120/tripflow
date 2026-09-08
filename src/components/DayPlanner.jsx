@@ -13,7 +13,9 @@ export default function DayPlanner({
   onReorder,
   onRemoveStop,
   onChangeTime,
+  onEditStop,
   onAddCandidateToDay,
+  onEditCandidate,
   onOpenAddPlace,
   mobileView,
   onChangeMobileView,
@@ -80,13 +82,17 @@ export default function DayPlanner({
             onReorder={onReorder}
             onRemoveStop={onRemoveStop}
             onChangeTime={onChangeTime}
+            onEditStop={onEditStop}
           />
 
           <CandidatePlaces
             candidates={candidates}
+            day={day}
+            nextDay={days[days.findIndex(({ id }) => id === day.id) + 1] ?? null}
             dayNumber={day.dayNumber}
             isDraft={isDraft}
             onAddToDay={onAddCandidateToDay}
+            onEditCandidate={onEditCandidate}
             onOpenAddPlace={onOpenAddPlace}
           />
         </section>
