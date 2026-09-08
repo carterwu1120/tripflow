@@ -129,13 +129,6 @@ export default function App() {
     });
   }
 
-  function handleChangeTime(stopId, time) {
-    updateDraftDay((currentDay) => ({
-      ...currentDay,
-      stops: currentDay.stops.map((stop) => stop.id === stopId ? { ...stop, time } : stop),
-    }));
-  }
-
   function handleAddCandidateToDay(candidateId) {
     setDraft((currentDraft) => {
       if (!currentDraft) return currentDraft;
@@ -253,11 +246,10 @@ export default function App() {
         isDraft={isDraft}
         onReorder={handleReorder}
         onRemoveStop={handleRemoveStop}
-        onChangeTime={handleChangeTime}
         onEditStop={(stop) => setPlaceEditor({ kind: "stop", place: stop })}
         onAddCandidateToDay={handleAddCandidateToDay}
         onEditCandidate={(candidate) => setPlaceEditor({ kind: "candidate", place: candidate })}
-        onOpenAddPlace={() => setPlaceEditor({ kind: "new", place: null })}
+        onOpenAddPlace={(presetType) => setPlaceEditor({ kind: "new", place: null, presetType })}
         mobileView={mobileView}
         onChangeMobileView={setMobileView}
       />
@@ -265,6 +257,7 @@ export default function App() {
       {placeEditor && (
         <AddPlaceDialog
           initialPlace={placeEditor.place}
+          presetType={placeEditor.presetType}
           onClose={() => setPlaceEditor(null)}
           onSavePlace={handleSavePlace}
         />

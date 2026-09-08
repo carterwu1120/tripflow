@@ -12,7 +12,6 @@ export default function DayPlanner({
   isDraft,
   onReorder,
   onRemoveStop,
-  onChangeTime,
   onEditStop,
   onAddCandidateToDay,
   onEditCandidate,
@@ -81,14 +80,11 @@ export default function DayPlanner({
             isDraft={isDraft}
             onReorder={onReorder}
             onRemoveStop={onRemoveStop}
-            onChangeTime={onChangeTime}
             onEditStop={onEditStop}
           />
 
           <CandidatePlaces
             candidates={candidates}
-            day={day}
-            nextDay={days[days.findIndex(({ id }) => id === day.id) + 1] ?? null}
             dayNumber={day.dayNumber}
             isDraft={isDraft}
             onAddToDay={onAddCandidateToDay}
@@ -104,11 +100,15 @@ export default function DayPlanner({
           <TripMap
             dayId={day.id}
             stops={day.stops}
+            hotelCandidates={candidates.filter((candidate) =>
+              candidate.type === "hotel" && candidate.coordinatesConfirmed
+            )}
             selectedStopId={selectedStopId}
             onSelectStop={onSelectStop}
           />
           <div className="map-key">
             <span><i className="key-dot selected" />Selected stop</span>
+            <span><i className="key-dot hotel" />Hotel candidate</span>
             <span><i className="key-line" />Planned order</span>
           </div>
         </section>

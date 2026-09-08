@@ -32,7 +32,6 @@ export default function TripStopCard({
   canMoveUp,
   canMoveDown,
   onRemove,
-  onChangeTime,
   onEdit,
 }) {
   const cardRef = useRef(null);
@@ -99,34 +98,8 @@ export default function TripStopCard({
 
         {isDraft && (
           <div className="stop-editor" onClick={(event) => event.stopPropagation()}>
-            <div className="time-editor">
-              <label>
-                Time style
-                <select
-                  value={timeKind}
-                  onChange={(event) => {
-                    const kind = event.target.value;
-                    onChangeTime({ kind, value: kind === "none" ? null : stop.time?.value || "09:00" });
-                  }}
-                >
-                  <option value="fixed">Fixed</option>
-                  <option value="approximate">Approximate</option>
-                  <option value="none">Sequence only</option>
-                </select>
-              </label>
-              {timeKind !== "none" && (
-                <label>
-                  Time
-                  <input
-                    type="time"
-                    value={stop.time?.value ?? "09:00"}
-                    onChange={(event) => onChangeTime({ ...stop.time, value: event.target.value })}
-                  />
-                </label>
-              )}
-            </div>
             <div className="editor-actions">
-              <button type="button" onClick={onEdit}>Edit details</button>
+              <button type="button" onClick={onEdit}>Edit</button>
               <button type="button" onClick={onMoveUp} disabled={!canMoveUp} aria-label="Move stop up">↑</button>
               <button type="button" onClick={onMoveDown} disabled={!canMoveDown} aria-label="Move stop down">↓</button>
               <button className="remove-button" type="button" onClick={onRemove}>Remove</button>

@@ -8,7 +8,6 @@ export default function ItineraryTimeline({
   isDraft,
   onReorder,
   onRemoveStop,
-  onChangeTime,
   onEditStop,
 }) {
   const [draggedStopId, setDraggedStopId] = useState(null);
@@ -56,7 +55,6 @@ export default function ItineraryTimeline({
               canMoveUp={index > 0}
               canMoveDown={index < day.stops.length - 1}
               onRemove={() => onRemoveStop(stop.id)}
-              onChangeTime={(time) => onChangeTime(stop.id, time)}
               onEdit={() => onEditStop(stop)}
             />
             {nextStop && <TravelLeg leg={travelLeg} />}
