@@ -3,7 +3,7 @@ import AddPlaceDialog from "./components/AddPlaceDialog";
 import DayPlanner from "./components/DayPlanner";
 import { initialCandidates, initialTrip } from "./data/okinawaDay3";
 
-const STORAGE_KEY = "tripflow-okinawa-day3";
+const STORAGE_KEY = "tripflow-okinawa-2027-v2";
 
 function clone(value) {
   return structuredClone(value);
@@ -32,12 +32,17 @@ function reorderStops(stops, draggedStopId, targetStopId) {
 export default function App() {
   const [savedPlan, setSavedPlan] = useState(loadSavedPlan);
   const [draft, setDraft] = useState(null);
+  const [selectedDayId, setSelectedDayId] = useState(() => initialTrip.days[0].id);
   const [selectedStopId, setSelectedStopId] = useState(null);
   const [mobileView, setMobileView] = useState("itinerary");
   const [isAddPlaceOpen, setIsAddPlaceOpen] = useState(false);
 
   const visiblePlan = draft ?? savedPlan;
-  const day = visiblePlan.trip.days[0];
+  const days = visiblePlan.trip.days;
+  const day = days.find((candidateDay) => candidateDay.id === selectedDayId) ?? days[0];
+  const visibleCandidates = visiblePlan.candidates.filter(
+    (candidate) => !candidate.suggestedDayId || candidate.suggestedDayId === day.id,
+  );
   const isDraft = draft !== null;
 
   useEffect(() => {
@@ -53,13 +58,20 @@ export default function App() {
   const updateDraftDay = useCallback((updater) => {
     setDraft((currentDraft) => {
       if (!currentDraft) return currentDraft;
-      const nextDay = updater(currentDraft.trip.days[0]);
+      const currentDay = currentDraft.trip.days.find(({ id }) => id === selectedDayId);
+      if (!currentDay) return currentDraft;
+      const nextDay = updater(currentDay);
       return {
         ...currentDraft,
-        trip: { ...currentDraft.trip, days: [nextDay] },
+        trip: {
+          ...currentDraft.trip,
+          days: currentDraft.trip.days.map((candidateDay) =>
+            candidateDay.id === selectedDayId ? nextDay : candidateDay
+          ),
+        },
       };
     });
-  }, []);
+  }, [selectedDayId]);
 
   const handleSelectStop = useCallback((stopId) => {
     setSelectedStopId(stopId);
@@ -92,16 +104,26 @@ export default function App() {
 
     setDraft((currentDraft) => {
       if (!currentDraft) return currentDraft;
-      const currentDay = currentDraft.trip.days[0];
+      const currentDay = currentDraft.trip.days.find(({ id }) => id === selectedDayId);
+      if (!currentDay) return currentDraft;
       return {
         ...currentDraft,
         trip: {
           ...currentDraft.trip,
-          days: [{ ...currentDay, stops: currentDay.stops.filter((stop) => stop.id !== stopId) }],
+          days: currentDraft.trip.days.map((candidateDay) =>
+            candidateDay.id === selectedDayId
+              ? { ...currentDay, stops: currentDay.stops.filter((stop) => stop.id !== stopId) }
+              : candidateDay
+          ),
         },
         candidates: [
           ...currentDraft.candidates,
-          { ...removedStop, status: "candidate", time: { kind: "none", value: null } },
+          {
+            ...removedStop,
+            suggestedDayId: selectedDayId,
+            status: "candidate",
+            time: { kind: "none", value: null },
+          },
         ],
       };
     });
@@ -120,15 +142,20 @@ export default function App() {
       const candidate = currentDraft.candidates.find((place) => place.id === candidateId);
       if (!candidate) return currentDraft;
 
-      const currentDay = currentDraft.trip.days[0];
+      const currentDay = currentDraft.trip.days.find(({ id }) => id === selectedDayId);
+      if (!currentDay) return currentDraft;
       return {
         ...currentDraft,
         trip: {
           ...currentDraft.trip,
-          days: [{
-            ...currentDay,
-            stops: [...currentDay.stops, { ...candidate, status: "planned" }],
-          }],
+          days: currentDraft.trip.days.map((candidateDay) =>
+            candidateDay.id === selectedDayId
+              ? {
+                  ...currentDay,
+                  stops: [...currentDay.stops, { ...candidate, status: "planned" }],
+                }
+              : candidateDay
+          ),
         },
         candidates: currentDraft.candidates.filter((place) => place.id !== candidateId),
       };
@@ -137,15 +164,16 @@ export default function App() {
   }
 
   function handleSaveCandidate(candidate) {
+    const candidateForDay = { ...candidate, suggestedDayId: selectedDayId };
     if (isDraft) {
       setDraft((currentDraft) => ({
         ...currentDraft,
-        candidates: [...currentDraft.candidates, candidate],
+        candidates: [...currentDraft.candidates, candidateForDay],
       }));
     } else {
       setSavedPlan((currentPlan) => ({
         ...currentPlan,
-        candidates: [...currentPlan.candidates, candidate],
+        candidates: [...currentPlan.candidates, candidateForDay],
       }));
     }
     setIsAddPlaceOpen(false);
@@ -187,8 +215,13 @@ export default function App() {
       </header>
 
       <DayPlanner
+        days={days}
         day={day}
-        candidates={visiblePlan.candidates}
+        candidates={visibleCandidates}
+        onSelectDay={(dayId) => {
+          setSelectedDayId(dayId);
+          setSelectedStopId(null);
+        }}
         selectedStopId={selectedStopId}
         onSelectStop={handleSelectStop}
         isDraft={isDraft}

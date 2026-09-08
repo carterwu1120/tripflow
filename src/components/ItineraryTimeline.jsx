@@ -66,11 +66,18 @@ export default function ItineraryTimeline({
 }
 
 function TravelLeg({ leg }) {
+  const modeIcon = {
+    driving: "🚗",
+    taxi: "🚕",
+    walking: "🚶",
+    shuttle: "🚌",
+  };
+
   return (
     <div className={`travel-leg ${leg ? "" : "unset"}`}>
       <span className="travel-line" />
       <span className="travel-label">
-        <span aria-hidden="true">{leg ? "↳" : "?"}</span>
+        <span aria-hidden="true">{leg ? modeIcon[leg.mode] ?? "🚗" : "?"}</span>
         {leg ? `${leg.mode} · ~${leg.minutes} min` : "Travel time not set"}
       </span>
     </div>

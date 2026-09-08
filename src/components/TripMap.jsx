@@ -11,12 +11,13 @@ function markerIcon(order, selected) {
   });
 }
 
-export default function TripMap({ stops, selectedStopId, onSelectStop }) {
+export default function TripMap({ dayId, stops, selectedStopId, onSelectStop }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
   const routeRef = useRef(null);
   const hasFitBoundsRef = useRef(false);
+  const renderedDayIdRef = useRef(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return undefined;
@@ -58,6 +59,11 @@ export default function TripMap({ stops, selectedStopId, onSelectStop }) {
 
     const coordinates = stops.map((stop) => [stop.latitude, stop.longitude]);
 
+    if (renderedDayIdRef.current !== dayId) {
+      renderedDayIdRef.current = dayId;
+      hasFitBoundsRef.current = false;
+    }
+
     routeRef.current = L.polyline(coordinates, {
       color: "#145c52",
       weight: 4,
@@ -96,7 +102,7 @@ export default function TripMap({ stops, selectedStopId, onSelectStop }) {
         { duration: 0.65 },
       );
     }
-  }, [stops, selectedStopId, onSelectStop]);
+  }, [dayId, stops, selectedStopId, onSelectStop]);
 
   return <div className="map-container" ref={containerRef} />;
 }

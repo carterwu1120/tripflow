@@ -83,6 +83,9 @@ export default function TripStopCard({
         <div className="stop-details">
           {stop.reservationRequired && <span className="detail-chip warm">Reservation</span>}
           {stop.lastEntryTime && <span className="detail-chip">Last entry {stop.lastEntryTime}</span>}
+          {stop.coordinatesConfirmed === false && (
+            <span className="detail-chip warm">Location to confirm</span>
+          )}
           <a
             href={stop.googleMapsUrl}
             target="_blank"

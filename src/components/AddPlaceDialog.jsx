@@ -28,6 +28,7 @@ export default function AddPlaceDialog({ onClose, onSaveCandidate }) {
       lastEntryTime: null,
       notes: "Added from mock place search.",
       reservationRequired: false,
+      coordinatesConfirmed: false,
       status: "candidate",
     });
   }
@@ -47,6 +48,7 @@ export default function AddPlaceDialog({ onClose, onSaveCandidate }) {
       lastEntryTime: null,
       notes: "Coordinates need confirmation before routing.",
       reservationRequired: false,
+      coordinatesConfirmed: false,
       googleMapsUrl: mapsUrl.trim(),
       status: "candidate",
     });

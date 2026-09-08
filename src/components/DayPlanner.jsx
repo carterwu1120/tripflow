@@ -3,8 +3,10 @@ import ItineraryTimeline from "./ItineraryTimeline";
 import TripMap from "./TripMap";
 
 export default function DayPlanner({
+  days,
   day,
   candidates,
+  onSelectDay,
   selectedStopId,
   onSelectStop,
   isDraft,
@@ -35,10 +37,25 @@ export default function DayPlanner({
         </button>
       </div>
 
+      <nav className="day-tabs" aria-label="Trip days">
+        {days.map((tripDay) => (
+          <button
+            className={tripDay.id === day.id ? "active" : ""}
+            type="button"
+            key={tripDay.id}
+            onClick={() => onSelectDay(tripDay.id)}
+            aria-current={tripDay.id === day.id ? "date" : undefined}
+          >
+            <strong>Day {tripDay.dayNumber}</strong>
+            <span>{tripDay.dateLabel.replace(/^[A-Za-z]+, /, "")}</span>
+          </button>
+        ))}
+      </nav>
+
       <div className="planner-grid">
         <section
           className={`itinerary-pane ${mobileView === "map" ? "mobile-hidden" : ""}`}
-          aria-label="Day 3 itinerary"
+          aria-label={`Day ${day.dayNumber} itinerary`}
         >
           <div className="day-heading">
             <div>
@@ -67,6 +84,7 @@ export default function DayPlanner({
 
           <CandidatePlaces
             candidates={candidates}
+            dayNumber={day.dayNumber}
             isDraft={isDraft}
             onAddToDay={onAddCandidateToDay}
             onOpenAddPlace={onOpenAddPlace}
@@ -75,9 +93,10 @@ export default function DayPlanner({
 
         <section
           className={`map-pane ${mobileView === "itinerary" ? "mobile-hidden" : ""}`}
-          aria-label="Day 3 map"
+          aria-label={`Day ${day.dayNumber} map`}
         >
           <TripMap
+            dayId={day.id}
             stops={day.stops}
             selectedStopId={selectedStopId}
             onSelectStop={onSelectStop}

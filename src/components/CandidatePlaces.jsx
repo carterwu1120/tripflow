@@ -1,5 +1,6 @@
 export default function CandidatePlaces({
   candidates,
+  dayNumber,
   isDraft,
   onAddToDay,
   onOpenAddPlace,
@@ -29,7 +30,7 @@ export default function CandidatePlaces({
               </div>
               {isDraft ? (
                 <button type="button" onClick={() => onAddToDay(candidate.id)}>
-                  Add to Day 3
+                  Add to Day {dayNumber}
                 </button>
               ) : (
                 <span className="edit-hint">Edit Plan to schedule</span>

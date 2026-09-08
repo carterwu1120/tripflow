@@ -219,12 +219,58 @@ h3 {
 
 .planner-shell {
   height: calc(100vh - 78px);
+  display: flex;
+  flex-direction: column;
 }
 
 .planner-grid {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(450px, 45%) 1fr;
+}
+
+.day-tabs {
+  flex: none;
+  min-height: 62px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 20px;
+  overflow-x: auto;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: thin;
+}
+
+.day-tabs button {
+  min-width: 92px;
+  padding: 7px 15px;
+  display: grid;
+  gap: 2px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+}
+
+.day-tabs button:hover {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.day-tabs button.active {
+  color: white;
+  background: var(--green);
+}
+
+.day-tabs strong {
+  font-size: 12px;
+}
+
+.day-tabs span {
+  font-size: 10px;
 }
 
 .itinerary-pane {
@@ -896,6 +942,17 @@ h3 {
     border-bottom: 1px solid var(--line);
   }
 
+  .day-tabs {
+    justify-content: flex-start;
+    min-height: 58px;
+    padding: 6px 12px;
+  }
+
+  .day-tabs button {
+    min-width: 78px;
+    padding-inline: 10px;
+  }
+
   .mobile-mode-toggle button {
     color: var(--muted);
     background: transparent;
@@ -912,7 +969,8 @@ h3 {
 
   .planner-grid {
     display: block;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
   }
 
   .itinerary-pane,
