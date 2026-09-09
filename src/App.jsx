@@ -61,6 +61,10 @@ export default function App() {
     setSelectedPlaceId(place.id);
   }
 
+  function handleUpdateLocation(placeId, latitude, longitude) {
+    dispatch({ type: "update-location", placeId, latitude, longitude });
+  }
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -93,6 +97,7 @@ export default function App() {
         onRemoveCandidate={handleRemoveTentative}
         onConfirmCandidate={(candidate) => handleSavePlace({ ...candidate, status: "confirmed" })}
         onAddTentative={() => setPlaceEditor({ kind: "new", place: null, presetStatus: "tentative" })}
+        onUpdateLocation={handleUpdateLocation}
         mobileView={mobileView}
         onChangeMobileView={setMobileView}
       />

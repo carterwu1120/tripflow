@@ -118,6 +118,35 @@ export function planReducer(state, action) {
         candidates: nextCandidates,
       }, place.status === "confirmed" ? `${place.name} added to itinerary` : `${place.name} saved as tentative`);
     }
+    case "update-location": {
+      let updatedName = "Place";
+      const updatePlace = (place) => {
+        if (place.id !== action.placeId) return place;
+        updatedName = place.name;
+        return {
+          ...place,
+          latitude: action.latitude,
+          longitude: action.longitude,
+          coordinatesConfirmed: true,
+          locationAccuracy: "confirmed",
+          locationSource: "manual",
+        };
+      };
+      const days = plan.trip.days.map((day) => {
+        if (!day.stops.some((place) => place.id === action.placeId)) return day;
+        return {
+          ...day,
+          stops: day.stops.map(updatePlace),
+          travelLegs: reconcileTravelLegs(day.stops, day.travelLegs, action.placeId),
+        };
+      });
+      const candidates = plan.candidates.map(updatePlace);
+      return commit(state, {
+        ...plan,
+        trip: { ...plan.trip, days },
+        candidates,
+      }, `${updatedName} location confirmed`);
+    }
     case "undo": {
       if (!state.past.length) return state;
       return {

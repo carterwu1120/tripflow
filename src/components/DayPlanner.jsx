@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import CandidatePlaces from "./CandidatePlaces";
 import ItineraryTimeline from "./ItineraryTimeline";
 import TripMap from "./TripMap";
@@ -16,9 +17,15 @@ export default function DayPlanner({
   onRemoveCandidate,
   onConfirmCandidate,
   onAddTentative,
+  onUpdateLocation,
   mobileView,
   onChangeMobileView,
 }) {
+  const [adjustingPlaceId, setAdjustingPlaceId] = useState(null);
+  const selectedPlace = [...day.stops, ...candidates].find((place) => place.id === selectedPlaceId);
+
+  useEffect(() => setAdjustingPlaceId(null), [day.id]);
+
   return (
     <main className="planner-shell">
       <div className="mobile-mode-toggle" aria-label="Planner view">
@@ -99,6 +106,11 @@ export default function DayPlanner({
             tentativePlaces={candidates.filter((candidate) => candidate.locationAccuracy !== "missing")}
             selectedPlaceId={selectedPlaceId}
             onSelectPlace={onSelectPlace}
+            adjustingPlaceId={adjustingPlaceId}
+            onLocationChange={(placeId, latitude, longitude) => {
+              onUpdateLocation(placeId, latitude, longitude);
+              setAdjustingPlaceId(null);
+            }}
           />
           <div className="map-key">
             <span><i className="key-dot confirmed" />Confirmed</span>
@@ -106,9 +118,26 @@ export default function DayPlanner({
             <span><i className="key-dot approximate" />Approximate location</span>
             <span><i className="key-line" />Itinerary order</span>
           </div>
-          {selectedPlaceId && (
+          {selectedPlace && (
             <div className="map-selection-card">
-              <strong>{[...day.stops, ...candidates].find((place) => place.id === selectedPlaceId)?.name}</strong>
+              <strong>{selectedPlace.name}</strong>
+              <span className={`location-state ${selectedPlace.locationAccuracy}`}>
+                {selectedPlace.locationAccuracy === "confirmed"
+                  ? "Confirmed location"
+                  : selectedPlace.locationAccuracy === "approximate"
+                    ? "Approximate location"
+                    : "Location missing"}
+              </span>
+              {selectedPlace.locationAccuracy !== "missing" && (
+                adjustingPlaceId === selectedPlace.id ? (
+                  <>
+                    <p>Drag the highlighted pin to its exact location.</p>
+                    <button type="button" onClick={() => setAdjustingPlaceId(null)}>Cancel adjustment</button>
+                  </>
+                ) : (
+                  <button type="button" onClick={() => setAdjustingPlaceId(selectedPlace.id)}>Adjust pin</button>
+                )
+              )}
               <button type="button" onClick={() => onChangeMobileView("itinerary")}>View in itinerary</button>
             </div>
           )}

@@ -25,7 +25,15 @@ function hasCoordinates(place) {
   return Number.isFinite(place?.latitude) && Number.isFinite(place?.longitude);
 }
 
-export default function TripMap({ dayId, stops, tentativePlaces, selectedPlaceId, onSelectPlace }) {
+export default function TripMap({
+  dayId,
+  stops,
+  tentativePlaces,
+  selectedPlaceId,
+  onSelectPlace,
+  adjustingPlaceId,
+  onLocationChange,
+}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
@@ -98,6 +106,7 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedPlaceId
         icon: markerIcon(index + 1, stop.id === selectedPlaceId, stop.locationAccuracy),
         riseOnHover: true,
         title: `${index + 1}. ${stop.name}`,
+        draggable: stop.id === adjustingPlaceId,
       });
 
       marker.bindTooltip(stop.name, {
@@ -106,6 +115,10 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedPlaceId
         opacity: 0.95,
       });
       marker.on("click", () => onSelectPlace(stop.id));
+      marker.on("dragend", (event) => {
+        const { lat, lng } = event.target.getLatLng();
+        onLocationChange(stop.id, lat, lng);
+      });
       marker.addTo(markerLayer);
     });
 
@@ -114,6 +127,7 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedPlaceId
         icon: tentativeMarkerIcon(index + 1, place.id === selectedPlaceId, place.locationAccuracy),
         riseOnHover: true,
         title: `Tentative ${index + 1}: ${place.name}`,
+        draggable: place.id === adjustingPlaceId,
       });
       marker.bindTooltip(`T${index + 1} · ${place.name}`, {
         direction: "top",
@@ -121,6 +135,10 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedPlaceId
         opacity: 0.95,
       });
       marker.on("click", () => onSelectPlace(place.id));
+      marker.on("dragend", (event) => {
+        const { lat, lng } = event.target.getLatLng();
+        onLocationChange(place.id, lat, lng);
+      });
       marker.addTo(markerLayer);
     });
 
@@ -138,7 +156,7 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedPlaceId
         { duration: 0.65 },
       );
     }
-  }, [dayId, stops, tentativePlaces, selectedPlaceId, onSelectPlace]);
+  }, [dayId, stops, tentativePlaces, selectedPlaceId, onSelectPlace, adjustingPlaceId, onLocationChange]);
 
   return <div className="map-container" ref={containerRef} />;
 }
