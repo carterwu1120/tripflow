@@ -1,20 +1,20 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 
-function markerIcon(order, selected) {
+function markerIcon(order, selected, locationAccuracy) {
   return L.divIcon({
     className: "trip-marker-shell",
-    html: `<span class="trip-marker ${selected ? "is-selected" : ""}"><b>${order}</b></span>`,
+    html: `<span class="trip-marker ${locationAccuracy === "approximate" ? "is-approximate" : ""} ${selected ? "is-selected" : ""}"><b>${order}</b></span>`,
     iconSize: selected ? [42, 42] : [34, 34],
     iconAnchor: selected ? [21, 42] : [17, 34],
     popupAnchor: [0, -38],
   });
 }
 
-function tentativeMarkerIcon(order, selected) {
+function tentativeMarkerIcon(order, selected, locationAccuracy) {
   return L.divIcon({
     className: "tentative-marker-shell",
-    html: `<span class="tentative-marker ${selected ? "is-selected" : ""}"><b>T${order}</b></span>`,
+    html: `<span class="tentative-marker ${locationAccuracy === "approximate" ? "is-approximate" : ""} ${selected ? "is-selected" : ""}"><b>T${order}</b></span>`,
     iconSize: selected ? [44, 44] : [38, 38],
     iconAnchor: selected ? [22, 44] : [19, 38],
     popupAnchor: [0, -34],
@@ -95,7 +95,7 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedPlaceId
     mappedStops.forEach((stop) => {
       const index = stops.findIndex(({ id }) => id === stop.id);
       const marker = L.marker([stop.latitude, stop.longitude], {
-        icon: markerIcon(index + 1, stop.id === selectedPlaceId),
+        icon: markerIcon(index + 1, stop.id === selectedPlaceId, stop.locationAccuracy),
         riseOnHover: true,
         title: `${index + 1}. ${stop.name}`,
       });
@@ -111,7 +111,7 @@ export default function TripMap({ dayId, stops, tentativePlaces, selectedPlaceId
 
     tentativePlaces.filter(hasCoordinates).forEach((place, index) => {
       const marker = L.marker([place.latitude, place.longitude], {
-        icon: tentativeMarkerIcon(index + 1, place.id === selectedPlaceId),
+        icon: tentativeMarkerIcon(index + 1, place.id === selectedPlaceId, place.locationAccuracy),
         riseOnHover: true,
         title: `Tentative ${index + 1}: ${place.name}`,
       });

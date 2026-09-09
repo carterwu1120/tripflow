@@ -96,13 +96,14 @@ export default function DayPlanner({
           <TripMap
             dayId={day.id}
             stops={day.stops}
-            tentativePlaces={candidates.filter((candidate) => candidate.coordinatesConfirmed)}
+            tentativePlaces={candidates.filter((candidate) => candidate.locationAccuracy !== "missing")}
             selectedPlaceId={selectedPlaceId}
             onSelectPlace={onSelectPlace}
           />
           <div className="map-key">
             <span><i className="key-dot confirmed" />Confirmed</span>
             <span><i className="key-dot tentative" />Tentative</span>
+            <span><i className="key-dot approximate" />Approximate location</span>
             <span><i className="key-line" />Itinerary order</span>
           </div>
           {selectedPlaceId && (

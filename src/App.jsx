@@ -4,11 +4,12 @@ import DayPlanner from "./components/DayPlanner";
 import { initialCandidates, initialTrip } from "./data/okinawaDay3";
 import { normalizePlan, planReducer } from "./domain/plan";
 
-const STORAGE_KEY = "tripflow-okinawa-2027-v2";
+const STORAGE_KEY = "tripflow-okinawa-2027-v3";
+const LEGACY_STORAGE_KEY = "tripflow-okinawa-2027-v2";
 
 function loadPlan() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
     return normalizePlan(saved
       ? JSON.parse(saved)
       : { trip: initialTrip, candidates: initialCandidates });

@@ -35,12 +35,15 @@ export default function CandidatePlaces({
                 {candidate.time?.value && <span>~{candidate.time.value}</span>}
                 {candidate.notes && <span>{candidate.notes}</span>}
               </div>
-              {!candidate.coordinatesConfirmed && (
+              {candidate.locationAccuracy === "missing" && (
                 <p className="location-warning">Not shown on map — add a full Google Maps link with location.</p>
+              )}
+              {candidate.locationAccuracy === "approximate" && (
+                <p className="location-warning">Approximate location — verify this pin before comparing distance.</p>
               )}
             </div>
             <div className="candidate-actions">
-              <button className="secondary-button compact" type="button" onClick={() => onSelectCandidate(candidate.id)} disabled={!candidate.coordinatesConfirmed}>
+              <button className="secondary-button compact" type="button" onClick={() => onSelectCandidate(candidate.id)} disabled={candidate.locationAccuracy === "missing"}>
                 Show on map
               </button>
               <button className="primary-button compact" type="button" onClick={() => onConfirmCandidate(candidate)}>

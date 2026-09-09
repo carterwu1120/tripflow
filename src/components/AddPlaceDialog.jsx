@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { coordinatesFromMapsUrl } from "../domain/location";
 
 const TYPE_LABELS = {
   hotel: "Hotel",
@@ -7,25 +8,6 @@ const TYPE_LABELS = {
   shopping: "Shopping",
   other: "Place",
 };
-
-function coordinatesFromMapsUrl(value) {
-  let url = value;
-  try {
-    url = decodeURIComponent(value);
-  } catch {
-    // Keep the original value when it contains malformed escapes.
-  }
-
-  const match = url.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
-    ?? url.match(/[?&](?:query|q)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
-    ?? url.match(/!3d(-?\d+(?:\.\d+)?).*?!4d(-?\d+(?:\.\d+)?)/);
-
-  if (!match) return null;
-  const latitude = Number(match[1]);
-  const longitude = Number(match[2]);
-  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
-  return { latitude, longitude };
-}
 
 export default function AddPlaceDialog({ initialPlace, presetType = "other", presetStatus = "confirmed", dayLabel, onClose, onSavePlace }) {
   const [type, setType] = useState(initialPlace?.type ?? presetType);
@@ -37,7 +19,12 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
   const [mapsUrl, setMapsUrl] = useState(initialPlace?.googleMapsUrl ?? "");
   const [coordinates, setCoordinates] = useState(() => {
     if (Number.isFinite(initialPlace?.latitude) && Number.isFinite(initialPlace?.longitude)) {
-      return { latitude: initialPlace.latitude, longitude: initialPlace.longitude };
+      return {
+        latitude: initialPlace.latitude,
+        longitude: initialPlace.longitude,
+        accuracy: initialPlace.locationAccuracy ?? (initialPlace.coordinatesConfirmed ? "confirmed" : "approximate"),
+        source: initialPlace.locationSource ?? "imported",
+      };
     }
     return null;
   });
@@ -74,7 +61,9 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
     const parsed = coordinatesFromMapsUrl(value.trim());
     setCoordinates(parsed);
     setLocationMessage(parsed
-      ? "Location found — it will appear on the map."
+      ? parsed.accuracy === "confirmed"
+        ? "Exact place coordinates found — it will appear on the map."
+        : "Approximate map-center coordinates found — verify the pin before relying on it."
       : "Link saved. This short link does not expose a map location yet.");
   }
 
@@ -99,9 +88,9 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
       lastEntryTime: initialPlace?.lastEntryTime ?? null,
       notes: notes.trim(),
       reservationRequired: initialPlace?.reservationRequired ?? false,
-      coordinatesConfirmed: mapsUrl === initialPlace?.googleMapsUrl
-        ? initialPlace?.coordinatesConfirmed ?? false
-        : Boolean(coordinates),
+      coordinatesConfirmed: coordinates?.accuracy === "confirmed",
+      locationAccuracy: coordinates?.accuracy ?? "missing",
+      locationSource: coordinates?.source ?? null,
       googleMapsUrl: mapsUrl.trim()
         || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} Okinawa`)}`,
     });

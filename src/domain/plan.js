@@ -1,3 +1,16 @@
+function normalizeLocation(place) {
+  const hasCoordinates = Number.isFinite(place.latitude) && Number.isFinite(place.longitude);
+  const locationAccuracy = place.locationAccuracy
+    ?? (place.coordinatesConfirmed ? "confirmed" : hasCoordinates ? "approximate" : "missing");
+
+  return {
+    ...place,
+    coordinatesConfirmed: locationAccuracy === "confirmed",
+    locationAccuracy,
+    locationSource: place.locationSource ?? (hasCoordinates ? "imported" : null),
+  };
+}
+
 export function normalizePlan(value) {
   return {
     ...value,
@@ -5,10 +18,10 @@ export function normalizePlan(value) {
       ...value.trip,
       days: value.trip.days.map((day) => ({
         ...day,
-        stops: day.stops.map((stop) => ({ ...stop, status: "confirmed" })),
+        stops: day.stops.map((stop) => normalizeLocation({ ...stop, status: "confirmed" })),
       })),
     },
-    candidates: (value.candidates ?? []).map((place) => ({
+    candidates: (value.candidates ?? []).map((place) => normalizeLocation({
       ...place,
       status: "tentative",
     })),
