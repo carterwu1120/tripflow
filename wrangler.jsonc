@@ -1,0 +1,12 @@
+{
+  "name": "tripflow",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-09-09",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "secrets": {
+    "required": ["GOOGLE_MAPS_API_KEY"]
+  }
+}

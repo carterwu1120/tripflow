@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { coordinatesFromMapsUrl } from "../domain/location";
+import { resolvePlace } from "../services/placeResolver";
 
 const TYPE_LABELS = {
   hotel: "Hotel",
@@ -29,6 +30,12 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
     return null;
   });
   const [locationMessage, setLocationMessage] = useState("");
+  const [resolveStatus, setResolveStatus] = useState("idle");
+  const [resolveError, setResolveError] = useState("");
+  const [resolvedDetails, setResolvedDetails] = useState({
+    googlePlaceId: initialPlace?.googlePlaceId ?? null,
+    formattedAddress: initialPlace?.formattedAddress ?? null,
+  });
 
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -52,6 +59,9 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
 
   function handleMapsUrl(value) {
     setMapsUrl(value);
+    setResolveStatus("idle");
+    setResolveError("");
+    setResolvedDetails({ googlePlaceId: null, formattedAddress: null });
     if (!value.trim()) {
       setCoordinates(null);
       setLocationMessage("");
@@ -65,6 +75,32 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
         ? "Exact place coordinates found — it will appear on the map."
         : "Approximate map-center coordinates found — verify the pin before relying on it."
       : "Link saved. This short link does not expose a map location yet.");
+  }
+
+  async function handleResolveLocation() {
+    setResolveStatus("loading");
+    setResolveError("");
+    try {
+      const result = await resolvePlace({ name: name.trim(), url: mapsUrl.trim() });
+      setCoordinates({
+        latitude: result.latitude,
+        longitude: result.longitude,
+        accuracy: "confirmed",
+        source: result.source,
+      });
+      setResolvedDetails({
+        googlePlaceId: result.googlePlaceId ?? null,
+        formattedAddress: result.formattedAddress ?? null,
+      });
+      if (!name.trim() && result.name) setName(result.name);
+      setLocationMessage(result.formattedAddress
+        ? `Exact location found: ${result.formattedAddress}`
+        : "Exact location found.");
+      setResolveStatus("success");
+    } catch (error) {
+      setResolveError(error instanceof Error ? error.message : "Unable to resolve this place.");
+      setResolveStatus("error");
+    }
   }
 
   function handleSubmit(event) {
@@ -91,6 +127,8 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
       coordinatesConfirmed: coordinates?.accuracy === "confirmed",
       locationAccuracy: coordinates?.accuracy ?? "missing",
       locationSource: coordinates?.source ?? null,
+      googlePlaceId: resolvedDetails.googlePlaceId,
+      formattedAddress: resolvedDetails.formattedAddress,
       googleMapsUrl: mapsUrl.trim()
         || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} Okinawa`)}`,
     });
@@ -162,6 +200,20 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
             <input type="url" value={mapsUrl} onChange={(event) => handleMapsUrl(event.target.value)} placeholder="Paste a Google Maps link" />
             {locationMessage && <small className={coordinates ? "location-found" : ""}>{locationMessage}</small>}
           </label>
+          {mapsUrl.trim() && coordinates?.accuracy !== "confirmed" && (
+            <div className="resolve-location-row">
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={resolveStatus === "loading"}
+                onClick={handleResolveLocation}
+              >
+                {resolveStatus === "loading" ? "Finding location…" : "Find exact location"}
+              </button>
+              <small>The link is sent securely to the configured location resolver.</small>
+            </div>
+          )}
+          {resolveError && <p className="field-error" role="alert">{resolveError}</p>}
 
           <div className="dialog-actions">
             <button className="secondary-button" type="button" onClick={onClose}>Cancel</button>

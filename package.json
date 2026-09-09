@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "worker:dev": "npm run build && npx wrangler@latest dev",
+    "worker:deploy": "npm run build && npx wrangler@latest deploy",
     "build": "vite build",
     "preview": "vite preview"
   },
