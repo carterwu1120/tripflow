@@ -3,6 +3,7 @@ import AddPlaceDialog from "./components/AddPlaceDialog";
 import DayPlanner from "./components/DayPlanner";
 import { initialCandidates, initialTrip } from "./data/okinawaDay3";
 import { normalizePlan, planReducer } from "./domain/plan";
+import { loadRemotePlan, saveRemotePlan } from "./services/planSync";
 
 const STORAGE_KEY = "tripflow-okinawa-2027-v3";
 const LEGACY_STORAGE_KEY = "tripflow-okinawa-2027-v2";
@@ -25,6 +26,8 @@ export default function App() {
   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
   const [mobileView, setMobileView] = useState("itinerary");
   const [placeEditor, setPlaceEditor] = useState(null);
+  const [cloudReady, setCloudReady] = useState(false);
+  const [syncStatus, setSyncStatus] = useState("loading");
 
   const days = plan.trip.days;
   const day = days.find((candidateDay) => candidateDay.id === selectedDayId) ?? days[0];
@@ -35,6 +38,33 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
   }, [plan]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadRemotePlan()
+      .then((remote) => {
+        if (cancelled) return;
+        if (remote?.plan) dispatch({ type: "replace-plan", plan: remote.plan });
+        setCloudReady(true);
+        setSyncStatus(remote ? "synced" : "saving");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setSyncStatus(error.status === 401 || error.status === 403 ? "local" : "offline");
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!cloudReady) return undefined;
+    setSyncStatus("saving");
+    const timeout = window.setTimeout(() => {
+      saveRemotePlan(plan)
+        .then(() => setSyncStatus("synced"))
+        .catch((error) => setSyncStatus(error.status === 401 || error.status === 403 ? "local" : "offline"));
+    }, 800);
+    return () => window.clearTimeout(timeout);
+  }, [cloudReady, plan]);
 
   useEffect(() => {
     if (selectedPlaceId && !day.stops.some((stop) => stop.id === selectedPlaceId)
@@ -75,9 +105,18 @@ export default function App() {
             <p className="trip-name">{plan.trip.name} · {plan.trip.location}</p>
           </div>
         </div>
-        <button className="primary-button" type="button" onClick={() => setPlaceEditor({ kind: "new", place: null })}>
-          + Add place
-        </button>
+        <div className="header-actions">
+          <p className={`sync-status ${syncStatus}`} role="status">
+            {syncStatus === "loading" && "Checking cloud…"}
+            {syncStatus === "saving" && "Saving…"}
+            {syncStatus === "synced" && "Saved to cloud"}
+            {syncStatus === "local" && "Saved on this device"}
+            {syncStatus === "offline" && "Offline · saved locally"}
+          </p>
+          <button className="primary-button" type="button" onClick={() => setPlaceEditor({ kind: "new", place: null })}>
+            + Add place
+          </button>
+        </div>
       </header>
 
       <DayPlanner

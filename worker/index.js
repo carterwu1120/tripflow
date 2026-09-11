@@ -1,4 +1,5 @@
 const GOOGLE_HOSTS = new Set(["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl", "goo.gl"]);
+const TRIP_ID = "okinawa-2027";
 
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -124,10 +125,77 @@ async function resolvePlace(request, env) {
   }
 }
 
+async function authenticatedEmail(ctx) {
+  const identity = await ctx.access?.getIdentity?.();
+  return typeof identity?.email === "string" ? identity.email.toLowerCase() : null;
+}
+
+async function planDocument(request, env, ctx) {
+  const cors = corsHeaders(request, env);
+  if (cors === null) return json({ error: "Origin not allowed." }, 403);
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...cors,
+        "access-control-allow-methods": "GET, PUT, OPTIONS",
+        "access-control-allow-headers": "content-type",
+      },
+    });
+  }
+
+  const email = await authenticatedEmail(ctx);
+  if (!email) return json({ error: "Cloud sync requires Cloudflare Access." }, 401, cors);
+  if (!env.DB) return json({ error: "D1 is not configured." }, 503, cors);
+
+  if (request.method === "GET") {
+    const row = await env.DB.prepare(
+      "SELECT data, version, updated_at, updated_by_email FROM trip_documents WHERE id = ?",
+    ).bind(TRIP_ID).first();
+    if (!row) return json({ error: "No cloud itinerary exists yet." }, 404, { ...cors, "cache-control": "no-store" });
+    return json({
+      plan: JSON.parse(row.data),
+      version: row.version,
+      updatedAt: row.updated_at,
+      updatedBy: row.updated_by_email,
+    }, 200, { ...cors, "cache-control": "no-store" });
+  }
+
+  if (request.method !== "PUT") return json({ error: "Use GET or PUT." }, 405, cors);
+  const raw = await request.text();
+  if (raw.length > 1_000_000) return json({ error: "The itinerary is too large." }, 413, cors);
+
+  let body;
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    return json({ error: "Invalid JSON." }, 400, cors);
+  }
+  if (!body?.plan?.trip?.days || !Array.isArray(body.plan.trip.days)) {
+    return json({ error: "Invalid itinerary data." }, 422, cors);
+  }
+
+  const updatedAt = new Date().toISOString();
+  await env.DB.prepare(`
+    INSERT INTO trip_documents (id, data, version, updated_at, updated_by_email)
+    VALUES (?, ?, 1, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      data = excluded.data,
+      version = trip_documents.version + 1,
+      updated_at = excluded.updated_at,
+      updated_by_email = excluded.updated_by_email
+  `).bind(TRIP_ID, JSON.stringify(body.plan), updatedAt, email).run();
+  const saved = await env.DB.prepare(
+    "SELECT version FROM trip_documents WHERE id = ?",
+  ).bind(TRIP_ID).first();
+  return json({ version: saved.version, updatedAt, updatedBy: email }, 200, { ...cors, "cache-control": "no-store" });
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === "/api/resolve-place") return resolvePlace(request, env);
+    if (url.pathname === "/api/plan") return planDocument(request, env, ctx);
     return env.ASSETS.fetch(request);
   },
 };

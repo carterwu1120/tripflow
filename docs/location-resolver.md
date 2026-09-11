@@ -30,3 +30,14 @@ npm.cmd run worker:deploy
 ```
 
 Set `ALLOWED_ORIGIN` in the Worker environment when the frontend is hosted on a different origin. For a public deployment, also configure Cloudflare rate limiting to protect the billable resolver endpoint.
+
+## D1 itinerary sync
+
+The production Worker binds `tripflow-production` as `env.DB`. Apply the tracked schema before enabling cloud sync:
+
+```powershell
+npx.cmd wrangler login
+npm.cmd run db:migrate:remote
+```
+
+`GET /api/plan` and `PUT /api/plan` require a Cloudflare Access identity. Without Access, the frontend continues to save to `localStorage` and reports that the itinerary is saved on this device.

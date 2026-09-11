@@ -8,5 +8,13 @@
   },
   "secrets": {
     "required": ["GOOGLE_MAPS_API_KEY"]
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tripflow-production",
+      "database_id": "67363457-eabf-4a0f-8803-0de4cfbd9043",
+      "migrations_dir": "migrations"
+    }
+  ]
 }

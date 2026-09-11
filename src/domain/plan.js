@@ -66,6 +66,8 @@ function commit(state, present, notice) {
 export function planReducer(state, action) {
   const plan = state.present;
   switch (action.type) {
+    case "replace-plan":
+      return { present: normalizePlan(action.plan), past: [], notice: null };
     case "reorder": {
       const present = updateDay(plan, action.dayId, (day) => {
         const stops = reorderStops(day.stops, action.draggedStopId, action.targetStopId);
