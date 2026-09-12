@@ -21,6 +21,16 @@ function tentativeMarkerIcon(order, selected, locationAccuracy) {
   });
 }
 
+function hotelMarkerIcon(selected, isTentative, locationAccuracy) {
+  return L.divIcon({
+    className: "hotel-marker-shell",
+    html: `<span class="hotel-marker ${isTentative ? "is-tentative" : ""} ${locationAccuracy === "approximate" ? "is-approximate" : ""} ${selected ? "is-selected" : ""}">🛏</span>`,
+    iconSize: selected ? [40, 40] : [34, 34],
+    iconAnchor: selected ? [20, 40] : [17, 34],
+    popupAnchor: [0, -32],
+  });
+}
+
 function hasCoordinates(place) {
   return Number.isFinite(place?.latitude) && Number.isFinite(place?.longitude);
 }
@@ -80,7 +90,12 @@ export default function TripMap({
     markerLayer.clearLayers();
     if (routeRef.current) routeRef.current.remove();
 
-    const mappedStops = stops.filter(hasCoordinates);
+    const routeStops = stops.filter((stop) => stop.type !== "hotel");
+    const hotelStops = stops.filter((stop) => stop.type === "hotel" && hasCoordinates(stop));
+    const routeTentatives = tentativePlaces.filter((place) => place.type !== "hotel");
+    const hotelTentatives = tentativePlaces.filter((place) => place.type === "hotel" && hasCoordinates(place));
+
+    const mappedStops = routeStops.filter(hasCoordinates);
     const coordinates = mappedStops.map((stop) => [stop.latitude, stop.longitude]);
     const tentativeCoordinates = tentativePlaces.filter(hasCoordinates).map((place) => [place.latitude, place.longitude]);
     const tentativeSignature = tentativePlaces.map((place) => `${place.id}:${place.latitude}:${place.longitude}`).join("|");
@@ -101,7 +116,7 @@ export default function TripMap({
     routeRef.current.bringToBack();
 
     mappedStops.forEach((stop) => {
-      const index = stops.findIndex(({ id }) => id === stop.id);
+      const index = routeStops.findIndex(({ id }) => id === stop.id);
       const marker = L.marker([stop.latitude, stop.longitude], {
         icon: markerIcon(index + 1, stop.id === selectedPlaceId, stop.locationAccuracy),
         riseOnHover: true,
@@ -122,7 +137,27 @@ export default function TripMap({
       marker.addTo(markerLayer);
     });
 
-    tentativePlaces.filter(hasCoordinates).forEach((place, index) => {
+    hotelStops.forEach((stop) => {
+      const marker = L.marker([stop.latitude, stop.longitude], {
+        icon: hotelMarkerIcon(stop.id === selectedPlaceId, false, stop.locationAccuracy),
+        riseOnHover: true,
+        title: `Stay: ${stop.name}`,
+        draggable: stop.id === adjustingPlaceId,
+      });
+      marker.bindTooltip(`Stay · ${stop.name}`, {
+        direction: "top",
+        offset: [0, -30],
+        opacity: 0.95,
+      });
+      marker.on("click", () => onSelectPlace(stop.id));
+      marker.on("dragend", (event) => {
+        const { lat, lng } = event.target.getLatLng();
+        onLocationChange(stop.id, lat, lng);
+      });
+      marker.addTo(markerLayer);
+    });
+
+    routeTentatives.filter(hasCoordinates).forEach((place, index) => {
       const marker = L.marker([place.latitude, place.longitude], {
         icon: tentativeMarkerIcon(index + 1, place.id === selectedPlaceId, place.locationAccuracy),
         riseOnHover: true,
@@ -142,7 +177,28 @@ export default function TripMap({
       marker.addTo(markerLayer);
     });
 
-    const visibleCoordinates = [...coordinates, ...tentativeCoordinates];
+    hotelTentatives.forEach((place) => {
+      const marker = L.marker([place.latitude, place.longitude], {
+        icon: hotelMarkerIcon(place.id === selectedPlaceId, true, place.locationAccuracy),
+        riseOnHover: true,
+        title: `Considering stay: ${place.name}`,
+        draggable: place.id === adjustingPlaceId,
+      });
+      marker.bindTooltip(`Considering · ${place.name}`, {
+        direction: "top",
+        offset: [0, -30],
+        opacity: 0.95,
+      });
+      marker.on("click", () => onSelectPlace(place.id));
+      marker.on("dragend", (event) => {
+        const { lat, lng } = event.target.getLatLng();
+        onLocationChange(place.id, lat, lng);
+      });
+      marker.addTo(markerLayer);
+    });
+
+    const hotelCoordinates = hotelStops.map((stop) => [stop.latitude, stop.longitude]);
+    const visibleCoordinates = [...coordinates, ...tentativeCoordinates, ...hotelCoordinates];
     if (!hasFitBoundsRef.current && visibleCoordinates.length) {
       map.fitBounds(visibleCoordinates, { padding: [60, 60] });
       hasFitBoundsRef.current = true;

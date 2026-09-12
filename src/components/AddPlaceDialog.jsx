@@ -36,6 +36,12 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
     googlePlaceId: initialPlace?.googlePlaceId ?? null,
     formattedAddress: initialPlace?.formattedAddress ?? null,
   });
+  const nameRef = useRef(name);
+  const autoResolvedUrlRef = useRef("");
+
+  useEffect(() => {
+    nameRef.current = name;
+  }, [name]);
 
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -81,7 +87,7 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
     setResolveStatus("loading");
     setResolveError("");
     try {
-      const result = await resolvePlace({ name: name.trim(), url: mapsUrl.trim() });
+      const result = await resolvePlace({ name: nameRef.current.trim(), url: mapsUrl.trim() });
       setCoordinates({
         latitude: result.latitude,
         longitude: result.longitude,
@@ -92,7 +98,7 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
         googlePlaceId: result.googlePlaceId ?? null,
         formattedAddress: result.formattedAddress ?? null,
       });
-      if (!name.trim() && result.name) setName(result.name);
+      if (!nameRef.current.trim() && result.name) setName(result.name);
       setLocationMessage(result.formattedAddress
         ? `Exact location found: ${result.formattedAddress}`
         : "Exact location found.");
@@ -102,6 +108,18 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
       setResolveStatus("error");
     }
   }
+
+  useEffect(() => {
+    const trimmed = mapsUrl.trim();
+    if (!/^https?:\/\//i.test(trimmed) || trimmed === autoResolvedUrlRef.current) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      autoResolvedUrlRef.current = trimmed;
+      handleResolveLocation();
+    }, 600);
+    return () => window.clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapsUrl]);
 
   function handleSubmit(event) {
     event.preventDefault();

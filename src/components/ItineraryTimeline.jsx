@@ -12,11 +12,13 @@ export default function ItineraryTimeline({
   const [draggedStopId, setDraggedStopId] = useState(null);
   const [announcement, setAnnouncement] = useState("");
 
+  const routeStops = day.stops.filter((stop) => stop.type !== "hotel");
+
   function handleDrop(targetStopId) {
     if (draggedStopId && draggedStopId !== targetStopId) {
       onReorder(draggedStopId, targetStopId);
-      const targetIndex = day.stops.findIndex((stop) => stop.id === targetStopId);
-      const moved = day.stops.find((stop) => stop.id === draggedStopId);
+      const targetIndex = routeStops.findIndex((stop) => stop.id === targetStopId);
+      const moved = routeStops.find((stop) => stop.id === draggedStopId);
       setAnnouncement(`${moved?.name ?? "Place"} moved to position ${targetIndex + 1}`);
     }
     setDraggedStopId(null);
@@ -25,8 +27,8 @@ export default function ItineraryTimeline({
   return (
     <div className="timeline">
       <p className="sr-only" aria-live="polite">{announcement}</p>
-      {day.stops.map((stop, index) => {
-        const nextStop = day.stops[index + 1];
+      {routeStops.map((stop, index) => {
+        const nextStop = routeStops[index + 1];
         const travelLeg = nextStop
           ? day.travelLegs.find(
               (leg) => leg.fromStopId === stop.id && leg.toStopId === nextStop.id,
@@ -52,12 +54,12 @@ export default function ItineraryTimeline({
                 event.preventDefault();
               }}
               onDrop={() => handleDrop(stop.id)}
-              onMoveUp={() => index > 0 && onReorder(stop.id, day.stops[index - 1].id)}
+              onMoveUp={() => index > 0 && onReorder(stop.id, routeStops[index - 1].id)}
               onMoveDown={() =>
-                index < day.stops.length - 1 && onReorder(stop.id, day.stops[index + 1].id)
+                index < routeStops.length - 1 && onReorder(stop.id, routeStops[index + 1].id)
               }
               canMoveUp={index > 0}
-              canMoveDown={index < day.stops.length - 1}
+              canMoveDown={index < routeStops.length - 1}
               onRemove={() => onRemoveStop(stop.id)}
               onEdit={() => onEditStop(stop)}
             />

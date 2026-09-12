@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import CandidatePlaces from "./CandidatePlaces";
 import ItineraryTimeline from "./ItineraryTimeline";
+import StaySection from "./StaySection";
 import TripMap from "./TripMap";
 
 export default function DayPlanner({
@@ -23,6 +24,10 @@ export default function DayPlanner({
 }) {
   const [adjustingPlaceId, setAdjustingPlaceId] = useState(null);
   const selectedPlace = [...day.stops, ...candidates].find((place) => place.id === selectedPlaceId);
+  const confirmedStays = day.stops.filter((stop) => stop.type === "hotel");
+  const routeStops = day.stops.filter((stop) => stop.type !== "hotel");
+  const tentativeStays = candidates.filter((candidate) => candidate.type === "hotel");
+  const routeCandidates = candidates.filter((candidate) => candidate.type !== "hotel");
 
   useEffect(() => setAdjustingPlaceId(null), [day.id]);
 
@@ -72,8 +77,20 @@ export default function DayPlanner({
               <p className="eyebrow">Day {day.dayNumber} · {day.dateLabel}</p>
               <h1>{day.title}</h1>
             </div>
-            <span className="stop-count">{day.stops.length} stops</span>
+            <span className="stop-count">{routeStops.length} stops</span>
           </div>
+
+          <StaySection
+            confirmedStays={confirmedStays}
+            tentativeStays={tentativeStays}
+            selectedPlaceId={selectedPlaceId}
+            onSelectPlace={onSelectPlace}
+            onEditStop={onEditStop}
+            onRemoveStop={onRemoveStop}
+            onEditCandidate={onEditCandidate}
+            onRemoveCandidate={onRemoveCandidate}
+            onConfirmCandidate={onConfirmCandidate}
+          />
 
           <ItineraryTimeline
             day={day}
@@ -85,7 +102,7 @@ export default function DayPlanner({
           />
 
           <CandidatePlaces
-            candidates={candidates}
+            candidates={routeCandidates}
             dayNumber={day.dayNumber}
             onEditCandidate={onEditCandidate}
             onRemoveCandidate={onRemoveCandidate}
@@ -115,6 +132,7 @@ export default function DayPlanner({
           <div className="map-key">
             <span><i className="key-dot confirmed" />Confirmed</span>
             <span><i className="key-dot tentative" />Tentative</span>
+            <span><i className="key-dot hotel" />Stay</span>
             <span><i className="key-dot approximate" />Approximate location</span>
             <span><i className="key-line" />Itinerary order</span>
           </div>

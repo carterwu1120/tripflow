@@ -101,7 +101,8 @@ async function resolvePlace(request, env) {
     const directCoordinates = resolvedUrl ? coordinatesFromUrl(resolvedUrl) : null;
 
     if (directCoordinates) {
-      return json({ ...directCoordinates, name: suppliedName || null, resolvedUrl, accuracy: "confirmed", source: "maps-redirect" }, 200, cors);
+      const inferredName = suppliedName || queryFromMapsUrl(resolvedUrl) || null;
+      return json({ ...directCoordinates, name: inferredName, resolvedUrl, accuracy: "confirmed", source: "maps-redirect" }, 200, cors);
     }
 
     const query = (resolvedUrl && queryFromMapsUrl(resolvedUrl)) || suppliedName;
