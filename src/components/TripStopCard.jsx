@@ -23,10 +23,7 @@ export default function TripStopCard({
   onSelect,
   isEditable,
   isDragging,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  onDrop,
+  dragHandleProps,
   onMoveUp,
   onMoveDown,
   canMoveUp,
@@ -48,8 +45,6 @@ export default function TripStopCard({
     <article
       ref={cardRef}
       className={`stop-card ${isSelected ? "selected" : ""} ${isDragging ? "dragging" : ""}`}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
       aria-current={isSelected ? "step" : undefined}
     >
       <div className="order-column">
@@ -58,9 +53,7 @@ export default function TripStopCard({
           <button
             type="button"
             className="drag-handle"
-            draggable
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
+            {...dragHandleProps}
             title="Drag to reorder"
             aria-label={`Drag ${stop.name} to reorder. Use move buttons for keyboard reordering.`}
           >

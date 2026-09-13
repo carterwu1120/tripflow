@@ -76,7 +76,7 @@ Trip
 - Leaflet
 - OpenStreetMap 圖磚
 - localStorage
-- 原生 HTML Drag and Drop
+- @dnd-kit(拖曳排序,滑鼠、觸控、鍵盤皆支援)
 
 目前沒有後端、資料庫或登入系統。
 
@@ -157,7 +157,6 @@ src/
 
 ### 使用體驗與品質
 
-- 觸控裝置的完整拖放操作；目前手機可使用上下箭頭排序
 - Undo / Redo
 - 離線地圖
 - 多語系

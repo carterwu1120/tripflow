@@ -429,11 +429,13 @@ h3 {
 }
 
 .drag-handle {
+  padding: 9px 6px;
   color: #82908b;
   font-size: 21px;
   line-height: 1;
   cursor: grab;
   user-select: none;
+  touch-action: none;
 }
 
 .drag-handle:active {
