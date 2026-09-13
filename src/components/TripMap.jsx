@@ -21,10 +21,13 @@ function tentativeMarkerIcon(order, selected, locationAccuracy) {
   });
 }
 
+// Lucide "hotel" icon (ISC license, https://lucide.dev) — free to use, no attribution required.
+const HOTEL_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 22v-6.57" /><path d="M12 11h.01" /><path d="M12 7h.01" /><path d="M14 15.43V22" /><path d="M15 16a5 5 0 0 0-6 0" /><path d="M16 11h.01" /><path d="M16 7h.01" /><path d="M8 11h.01" /><path d="M8 7h.01" /><rect x="4" y="2" width="16" height="20" rx="2" /></svg>`;
+
 function hotelMarkerIcon(selected, isTentative, locationAccuracy) {
   return L.divIcon({
     className: "hotel-marker-shell",
-    html: `<span class="hotel-marker ${isTentative ? "is-tentative" : ""} ${locationAccuracy === "approximate" ? "is-approximate" : ""} ${selected ? "is-selected" : ""}">🛏</span>`,
+    html: `<span class="hotel-marker ${isTentative ? "is-tentative" : ""} ${locationAccuracy === "approximate" ? "is-approximate" : ""} ${selected ? "is-selected" : ""}">${HOTEL_ICON_SVG}</span>`,
     iconSize: selected ? [40, 40] : [34, 34],
     iconAnchor: selected ? [20, 40] : [17, 34],
     popupAnchor: [0, -32],

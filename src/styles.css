@@ -1436,7 +1436,10 @@ h3 {
   border: 3px solid white;
   border-radius: 9px;
   box-shadow: 0 5px 14px rgba(90, 63, 12, 0.32);
-  font-size: 15px;
+}
+
+.hotel-marker svg {
+  display: block;
 }
 
 .hotel-marker.is-tentative {
