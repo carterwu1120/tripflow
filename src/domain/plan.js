@@ -184,7 +184,7 @@ export function planReducer(state, action) {
         ...day,
         travelLegs: [
           ...day.travelLegs.filter((leg) => !(leg.fromStopId === action.fromStopId && leg.toStopId === action.toStopId)),
-          { fromStopId: action.fromStopId, toStopId: action.toStopId, mode: action.mode, minutes: action.minutes },
+          { fromStopId: action.fromStopId, toStopId: action.toStopId, mode: action.mode, minutes: action.minutes, polyline: action.polyline ?? null },
         ],
       }));
       return { ...state, present };

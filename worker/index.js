@@ -151,7 +151,7 @@ async function computeTravelTime(request, env) {
       headers: {
         "content-type": "application/json",
         "X-Goog-Api-Key": env.GOOGLE_MAPS_API_KEY,
-        "X-Goog-FieldMask": "routes.duration",
+        "X-Goog-FieldMask": "routes.duration,routes.polyline.encodedPolyline",
       },
       body: JSON.stringify({
         origin: { location: { latLng: { latitude: body.from.latitude, longitude: body.from.longitude } } },
@@ -164,7 +164,8 @@ async function computeTravelTime(request, env) {
     const data = await response.json();
     const durationSeconds = Number(data.routes?.[0]?.duration?.replace(/s$/, ""));
     if (!Number.isFinite(durationSeconds)) return json({ error: "Google Routes could not find a driving route." }, 404, cors);
-    return json({ minutes: Math.round(durationSeconds / 60), mode: "driving" }, 200, cors);
+    const polyline = data.routes?.[0]?.polyline?.encodedPolyline ?? null;
+    return json({ minutes: Math.round(durationSeconds / 60), mode: "driving", polyline }, 200, cors);
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Unable to compute travel time." }, 400, cors ?? {});
   }

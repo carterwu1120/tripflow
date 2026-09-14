@@ -95,6 +95,7 @@ export default function App() {
             toStopId: pair.toStopId,
             mode: result.mode,
             minutes: result.minutes,
+            polyline: result.polyline,
           });
         })
         .catch(() => {})

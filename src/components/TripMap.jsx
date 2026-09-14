@@ -38,9 +38,43 @@ function hasCoordinates(place) {
   return Number.isFinite(place?.latitude) && Number.isFinite(place?.longitude);
 }
 
+// Decodes Google's encoded polyline format (precision 5) into [lat, lng] pairs.
+function decodePolyline(encoded) {
+  if (!encoded) return [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  const points = [];
+
+  while (index < encoded.length) {
+    let shift = 0;
+    let result = 0;
+    let byte;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+
+    shift = 0;
+    result = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+
+    points.push([lat / 1e5, lng / 1e5]);
+  }
+  return points;
+}
+
 export default function TripMap({
   dayId,
   stops,
+  travelLegs,
   tentativePlaces,
   selectedPlaceId,
   onSelectPlace,
@@ -50,7 +84,7 @@ export default function TripMap({
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerLayerRef = useRef(null);
-  const routeRef = useRef(null);
+  const routeLayerRef = useRef(null);
   const hasFitBoundsRef = useRef(false);
   const renderedDayIdRef = useRef(null);
   const renderedTentativesRef = useRef("");
@@ -69,6 +103,7 @@ export default function TripMap({
       attribution: "&copy; OpenStreetMap contributors",
     }).addTo(map);
 
+    routeLayerRef.current = L.layerGroup().addTo(map);
     markerLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
@@ -80,7 +115,7 @@ export default function TripMap({
       map.remove();
       mapRef.current = null;
       markerLayerRef.current = null;
-      routeRef.current = null;
+      routeLayerRef.current = null;
       hasFitBoundsRef.current = false;
     };
   }, []);
@@ -91,7 +126,7 @@ export default function TripMap({
     if (!map || !markerLayer) return;
 
     markerLayer.clearLayers();
-    if (routeRef.current) routeRef.current.remove();
+    routeLayerRef.current?.clearLayers();
 
     const routeStops = stops.filter((stop) => stop.type !== "hotel");
     const hotelStops = stops.filter((stop) => stop.type === "hotel" && hasCoordinates(stop));
@@ -109,14 +144,21 @@ export default function TripMap({
       hasFitBoundsRef.current = false;
     }
 
-    routeRef.current = L.polyline(coordinates, {
-      color: "#145c52",
-      weight: 4,
-      opacity: 0.72,
-      dashArray: "8 9",
-      lineCap: "round",
-    }).addTo(map);
-    routeRef.current.bringToBack();
+    const legByPair = new Map((travelLegs ?? []).map((leg) => [`${leg.fromStopId}:${leg.toStopId}`, leg]));
+
+    mappedStops.slice(0, -1).forEach((stop, index) => {
+      const nextStop = mappedStops[index + 1];
+      const leg = legByPair.get(`${stop.id}:${nextStop.id}`);
+      const drivingPath = leg?.polyline ? decodePolyline(leg.polyline) : null;
+
+      L.polyline(drivingPath ?? [[stop.latitude, stop.longitude], [nextStop.latitude, nextStop.longitude]], {
+        color: "#145c52",
+        weight: 4,
+        opacity: 0.72,
+        dashArray: drivingPath ? null : "8 9",
+        lineCap: "round",
+      }).addTo(routeLayerRef.current);
+    });
 
     mappedStops.forEach((stop) => {
       const index = routeStops.findIndex(({ id }) => id === stop.id);
@@ -215,7 +257,7 @@ export default function TripMap({
         { duration: 0.65 },
       );
     }
-  }, [dayId, stops, tentativePlaces, selectedPlaceId, onSelectPlace, adjustingPlaceId, onLocationChange]);
+  }, [dayId, stops, travelLegs, tentativePlaces, selectedPlaceId, onSelectPlace, adjustingPlaceId, onLocationChange]);
 
   return <div className="map-container" ref={containerRef} />;
 }

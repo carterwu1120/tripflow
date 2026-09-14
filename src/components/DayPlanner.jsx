@@ -123,6 +123,7 @@ export default function DayPlanner({
           <TripMap
             dayId={day.id}
             stops={day.stops}
+            travelLegs={day.travelLegs}
             tentativePlaces={candidates.filter((candidate) => candidate.locationAccuracy !== "missing")}
             selectedPlaceId={selectedPlaceId}
             onSelectPlace={onSelectPlace}
