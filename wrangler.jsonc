@@ -2,6 +2,9 @@
   "name": "tripflow",
   "main": "worker/index.js",
   "compatibility_date": "2026-09-09",
+  "vars": {
+    "ALLOWED_ORIGIN": "https://tripflow.carterwu1120.workers.dev"
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS"

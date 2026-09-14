@@ -165,7 +165,6 @@ async function computeTravelTime(request, env) {
     const durationSeconds = Number(data.routes?.[0]?.duration?.replace(/s$/, ""));
     if (!Number.isFinite(durationSeconds)) return json({ error: "Google Routes could not find a driving route." }, 404, cors);
     const polyline = data.routes?.[0]?.polyline?.encodedPolyline ?? null;
-    console.log("travel-time debug", JSON.stringify({ hasPolyline: Boolean(polyline), polylineLength: polyline?.length ?? 0, routeKeys: Object.keys(data.routes?.[0] ?? {}) }));
     return json({ minutes: Math.round(durationSeconds / 60), mode: "driving", polyline }, 200, cors);
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Unable to compute travel time." }, 400, cors ?? {});
