@@ -28,6 +28,30 @@ export function normalizePlan(value) {
   };
 }
 
+export function routeStopsOf(day) {
+  return day.stops.filter((stop) => stop.type !== "hotel");
+}
+
+function hasCoordinates(place) {
+  return Number.isFinite(place?.latitude) && Number.isFinite(place?.longitude);
+}
+
+export function findMissingTravelLegPairs(routeStops, travelLegs = []) {
+  const existingPairs = new Set(travelLegs.map((leg) => `${leg.fromStopId}:${leg.toStopId}`));
+
+  return routeStops.slice(0, -1).flatMap((stop, index) => {
+    const nextStop = routeStops[index + 1];
+    if (existingPairs.has(`${stop.id}:${nextStop.id}`)) return [];
+    if (!hasCoordinates(stop) || !hasCoordinates(nextStop)) return [];
+    return [{
+      fromStopId: stop.id,
+      toStopId: nextStop.id,
+      from: { latitude: stop.latitude, longitude: stop.longitude },
+      to: { latitude: nextStop.latitude, longitude: nextStop.longitude },
+    }];
+  });
+}
+
 export function reconcileTravelLegs(stops, travelLegs = [], invalidPlaceId = null) {
   const adjacentPairs = new Set(
     stops.slice(0, -1).map((stop, index) => `${stop.id}:${stops[index + 1].id}`),
@@ -154,6 +178,16 @@ export function planReducer(state, action) {
         trip: { ...plan.trip, days },
         candidates,
       }, `${updatedName} location confirmed`);
+    }
+    case "set-travel-leg": {
+      const present = updateDay(plan, action.dayId, (day) => ({
+        ...day,
+        travelLegs: [
+          ...day.travelLegs.filter((leg) => !(leg.fromStopId === action.fromStopId && leg.toStopId === action.toStopId)),
+          { fromStopId: action.fromStopId, toStopId: action.toStopId, mode: action.mode, minutes: action.minutes },
+        ],
+      }));
+      return { ...state, present };
     }
     case "undo": {
       if (!state.past.length) return state;

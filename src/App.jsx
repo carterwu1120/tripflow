@@ -1,9 +1,10 @@
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import AddPlaceDialog from "./components/AddPlaceDialog";
 import DayPlanner from "./components/DayPlanner";
 import { initialCandidates, initialTrip } from "./data/okinawaDay3";
-import { normalizePlan, planReducer } from "./domain/plan";
+import { findMissingTravelLegPairs, normalizePlan, planReducer, routeStopsOf } from "./domain/plan";
 import { loadRemotePlan, saveRemotePlan } from "./services/planSync";
+import { computeTravelTime } from "./services/travelTime";
 
 const STORAGE_KEY = "tripflow-okinawa-2027-v3";
 const LEGACY_STORAGE_KEY = "tripflow-okinawa-2027-v2";
@@ -28,6 +29,8 @@ export default function App() {
   const [placeEditor, setPlaceEditor] = useState(null);
   const [cloudReady, setCloudReady] = useState(false);
   const [syncStatus, setSyncStatus] = useState("loading");
+  const [pendingLegPairs, setPendingLegPairs] = useState(() => new Set());
+  const attemptedLegPairsRef = useRef(new Set());
 
   const days = plan.trip.days;
   const day = days.find((candidateDay) => candidateDay.id === selectedDayId) ?? days[0];
@@ -72,6 +75,38 @@ export default function App() {
       setSelectedPlaceId(null);
     }
   }, [day.stops, selectedPlaceId, tentativePlaces]);
+
+  useEffect(() => {
+    const missingPairs = findMissingTravelLegPairs(routeStopsOf(day), day.travelLegs)
+      .filter((pair) => !attemptedLegPairsRef.current.has(`${pair.fromStopId}:${pair.toStopId}`));
+    if (!missingPairs.length) return;
+
+    missingPairs.forEach((pair) => {
+      const key = `${pair.fromStopId}:${pair.toStopId}`;
+      attemptedLegPairsRef.current.add(key);
+      setPendingLegPairs((prev) => new Set(prev).add(key));
+
+      computeTravelTime(pair.from, pair.to)
+        .then((result) => {
+          dispatch({
+            type: "set-travel-leg",
+            dayId: day.id,
+            fromStopId: pair.fromStopId,
+            toStopId: pair.toStopId,
+            mode: result.mode,
+            minutes: result.minutes,
+          });
+        })
+        .catch(() => {})
+        .finally(() => {
+          setPendingLegPairs((prev) => {
+            const next = new Set(prev);
+            next.delete(key);
+            return next;
+          });
+        });
+    });
+  }, [day]);
 
   function handleReorder(draggedStopId, targetStopId) {
     dispatch({ type: "reorder", dayId: selectedDayId, draggedStopId, targetStopId });
@@ -137,6 +172,7 @@ export default function App() {
         onConfirmCandidate={(candidate) => handleSavePlace({ ...candidate, status: "confirmed" })}
         onAddTentative={() => setPlaceEditor({ kind: "new", place: null, presetStatus: "tentative" })}
         onUpdateLocation={handleUpdateLocation}
+        pendingLegPairs={pendingLegPairs}
         mobileView={mobileView}
         onChangeMobileView={setMobileView}
       />

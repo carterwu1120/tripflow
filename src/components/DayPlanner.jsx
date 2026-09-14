@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { routeStopsOf } from "../domain/plan";
 import CandidatePlaces from "./CandidatePlaces";
 import ItineraryTimeline from "./ItineraryTimeline";
 import StaySection from "./StaySection";
@@ -19,13 +20,14 @@ export default function DayPlanner({
   onConfirmCandidate,
   onAddTentative,
   onUpdateLocation,
+  pendingLegPairs,
   mobileView,
   onChangeMobileView,
 }) {
   const [adjustingPlaceId, setAdjustingPlaceId] = useState(null);
   const selectedPlace = [...day.stops, ...candidates].find((place) => place.id === selectedPlaceId);
   const confirmedStays = day.stops.filter((stop) => stop.type === "hotel");
-  const routeStops = day.stops.filter((stop) => stop.type !== "hotel");
+  const routeStops = routeStopsOf(day);
   const tentativeStays = candidates.filter((candidate) => candidate.type === "hotel");
   const routeCandidates = candidates.filter((candidate) => candidate.type !== "hotel");
 
@@ -99,6 +101,7 @@ export default function DayPlanner({
             onReorder={onReorder}
             onRemoveStop={onRemoveStop}
             onEditStop={onEditStop}
+            pendingLegPairs={pendingLegPairs}
           />
 
           <CandidatePlaces

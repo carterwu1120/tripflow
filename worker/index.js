@@ -127,6 +127,49 @@ async function resolvePlace(request, env) {
   }
 }
 
+function isFiniteCoordinate(point) {
+  return Number.isFinite(point?.latitude) && Number.isFinite(point?.longitude);
+}
+
+async function computeTravelTime(request, env) {
+  const cors = corsHeaders(request, env);
+  if (cors === null) return json({ error: "Origin not allowed." }, 403);
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: { ...cors, "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type" } });
+  }
+  if (request.method !== "POST") return json({ error: "Use POST." }, 405, cors);
+
+  try {
+    const body = await request.json();
+    if (!isFiniteCoordinate(body.from) || !isFiniteCoordinate(body.to)) {
+      return json({ error: "Provide from/to coordinates." }, 422, cors);
+    }
+    if (!env.GOOGLE_MAPS_API_KEY) return json({ error: "GOOGLE_MAPS_API_KEY is not configured." }, 503, cors);
+
+    const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "X-Goog-Api-Key": env.GOOGLE_MAPS_API_KEY,
+        "X-Goog-FieldMask": "routes.duration",
+      },
+      body: JSON.stringify({
+        origin: { location: { latLng: { latitude: body.from.latitude, longitude: body.from.longitude } } },
+        destination: { location: { latLng: { latitude: body.to.latitude, longitude: body.to.longitude } } },
+        travelMode: "DRIVE",
+        routingPreference: "TRAFFIC_UNAWARE",
+      }),
+    });
+    if (!response.ok) throw new Error(`Google Routes returned ${response.status}.`);
+    const data = await response.json();
+    const durationSeconds = Number(data.routes?.[0]?.duration?.replace(/s$/, ""));
+    if (!Number.isFinite(durationSeconds)) return json({ error: "Google Routes could not find a driving route." }, 404, cors);
+    return json({ minutes: Math.round(durationSeconds / 60), mode: "driving" }, 200, cors);
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : "Unable to compute travel time." }, 400, cors ?? {});
+  }
+}
+
 async function authenticatedEmail(ctx) {
   const identity = await ctx.access?.getIdentity?.();
   return typeof identity?.email === "string" ? identity.email.toLowerCase() : null;
@@ -197,6 +240,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === "/api/resolve-place") return resolvePlace(request, env);
+    if (url.pathname === "/api/travel-time") return computeTravelTime(request, env);
     if (url.pathname === "/api/plan") return planDocument(request, env, ctx);
     return env.ASSETS.fetch(request);
   },

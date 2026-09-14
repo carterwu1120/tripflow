@@ -2,6 +2,7 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
+import { routeStopsOf } from "../domain/plan";
 import TripStopCard from "./TripStopCard";
 
 function SortableStopRow({ stop, children }) {
@@ -25,9 +26,10 @@ export default function ItineraryTimeline({
   onReorder,
   onRemoveStop,
   onEditStop,
+  pendingLegPairs,
 }) {
   const [announcement, setAnnouncement] = useState("");
-  const routeStops = day.stops.filter((stop) => stop.type !== "hotel");
+  const routeStops = routeStopsOf(day);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -77,7 +79,12 @@ export default function ItineraryTimeline({
                       onRemove={() => onRemoveStop(stop.id)}
                       onEdit={() => onEditStop(stop)}
                     />
-                    {nextStop && <TravelLeg leg={travelLeg} />}
+                    {nextStop && (
+                      <TravelLeg
+                        leg={travelLeg}
+                        isPending={pendingLegPairs?.has(`${stop.id}:${nextStop.id}`)}
+                      />
+                    )}
                   </>
                 )}
               </SortableStopRow>
@@ -89,7 +96,7 @@ export default function ItineraryTimeline({
   );
 }
 
-function TravelLeg({ leg }) {
+function TravelLeg({ leg, isPending }) {
   const modeIcon = {
     driving: "🚗",
     taxi: "🚕",
@@ -101,8 +108,8 @@ function TravelLeg({ leg }) {
     <div className={`travel-leg ${leg ? "" : "unset"}`}>
       <span className="travel-line" />
       <span className="travel-label">
-        <span aria-hidden="true">{leg ? modeIcon[leg.mode] ?? "🚗" : "?"}</span>
-        {leg ? `${leg.mode} · ~${leg.minutes} min` : "Travel time not set"}
+        <span aria-hidden="true">{leg ? modeIcon[leg.mode] ?? "🚗" : isPending ? "⏳" : "?"}</span>
+        {leg ? `${leg.mode} · ~${leg.minutes} min` : isPending ? "Calculating travel time…" : "Travel time not set"}
       </span>
     </div>
   );
