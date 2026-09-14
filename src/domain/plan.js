@@ -37,11 +37,11 @@ function hasCoordinates(place) {
 }
 
 export function findMissingTravelLegPairs(routeStops, travelLegs = []) {
-  const existingPairs = new Set(travelLegs.map((leg) => `${leg.fromStopId}:${leg.toStopId}`));
+  const legByPair = new Map(travelLegs.map((leg) => [`${leg.fromStopId}:${leg.toStopId}`, leg]));
 
   return routeStops.slice(0, -1).flatMap((stop, index) => {
     const nextStop = routeStops[index + 1];
-    if (existingPairs.has(`${stop.id}:${nextStop.id}`)) return [];
+    if (legByPair.get(`${stop.id}:${nextStop.id}`)?.polyline) return [];
     if (!hasCoordinates(stop) || !hasCoordinates(nextStop)) return [];
     return [{
       fromStopId: stop.id,
