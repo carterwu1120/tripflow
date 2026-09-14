@@ -154,6 +154,7 @@ export default function App() {
           initialPlace={placeEditor.place}
           presetStatus={placeEditor.presetStatus}
           dayLabel={`Day ${day.dayNumber} · ${day.dateLabel}`}
+          dayDate={day.date}
           onClose={() => setPlaceEditor(null)}
           onSavePlace={handleSavePlace}
         />

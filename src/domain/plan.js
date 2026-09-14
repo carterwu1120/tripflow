@@ -69,11 +69,17 @@ export function planReducer(state, action) {
     case "replace-plan":
       return { present: normalizePlan(action.plan), past: [], notice: null };
     case "reorder": {
-      const present = updateDay(plan, action.dayId, (day) => {
-        const stops = reorderStops(day.stops, action.draggedStopId, action.targetStopId);
-        return { ...day, stops, travelLegs: reconcileTravelLegs(stops, day.travelLegs) };
-      });
-      return present === plan ? state : commit(state, present, "Itinerary reordered");
+      const day = plan.trip.days.find(({ id }) => id === action.dayId);
+      if (!day) return state;
+      const stops = reorderStops(day.stops, action.draggedStopId, action.targetStopId);
+      if (stops === day.stops) return state;
+      const travelLegs = reconcileTravelLegs(stops, day.travelLegs);
+      const droppedLegCount = day.travelLegs.length - travelLegs.length;
+      const present = updateDay(plan, action.dayId, () => ({ ...day, stops, travelLegs }));
+      const notice = droppedLegCount > 0
+        ? `Itinerary reordered · ${droppedLegCount} travel time${droppedLegCount > 1 ? "s" : ""} need updating`
+        : "Itinerary reordered";
+      return commit(state, present, notice);
     }
     case "remove-stop": {
       const removed = plan.trip.days.flatMap((day) => day.stops).find((place) => place.id === action.placeId);

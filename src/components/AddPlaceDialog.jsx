@@ -10,13 +10,32 @@ const TYPE_LABELS = {
   other: "Place",
 };
 
-export default function AddPlaceDialog({ initialPlace, presetType = "other", presetStatus = "confirmed", dayLabel, onClose, onSavePlace }) {
+function formatOpeningHoursForDay(periods, targetDay) {
+  if (!periods?.length) return "";
+  const pad = (value) => String(value ?? 0).padStart(2, "0");
+  const formatPoint = (point) => `${pad(point.hour)}:${pad(point.minute)}`;
+
+  const alwaysOpen = periods.length === 1
+    && periods[0].open?.day === 0 && periods[0].open?.hour === 0 && periods[0].open?.minute === 0
+    && !periods[0].close;
+  if (alwaysOpen) return "24 hours";
+
+  const matches = periods.filter((period) => period.open?.day === targetDay);
+  if (!matches.length) return "Closed";
+
+  return matches
+    .map((period) => period.close ? `${formatPoint(period.open)}–${formatPoint(period.close)}` : formatPoint(period.open))
+    .join(", ");
+}
+
+export default function AddPlaceDialog({ initialPlace, presetType = "other", presetStatus = "confirmed", dayLabel, dayDate, onClose, onSavePlace }) {
   const [type, setType] = useState(initialPlace?.type ?? presetType);
   const [status, setStatus] = useState(initialPlace?.status ?? presetStatus);
   const dialogRef = useRef(null);
   const [name, setName] = useState(initialPlace?.name ?? "");
   const [timeValue, setTimeValue] = useState(initialPlace?.time?.value ?? "");
   const [notes, setNotes] = useState(initialPlace?.notes ?? "");
+  const [openingHours, setOpeningHours] = useState(initialPlace?.openingHours ?? "");
   const [mapsUrl, setMapsUrl] = useState(initialPlace?.googleMapsUrl ?? "");
   const [coordinates, setCoordinates] = useState(() => {
     if (Number.isFinite(initialPlace?.latitude) && Number.isFinite(initialPlace?.longitude)) {
@@ -37,11 +56,16 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
     formattedAddress: initialPlace?.formattedAddress ?? null,
   });
   const nameRef = useRef(name);
+  const openingHoursRef = useRef(openingHours);
   const autoResolvedUrlRef = useRef("");
 
   useEffect(() => {
     nameRef.current = name;
   }, [name]);
+
+  useEffect(() => {
+    openingHoursRef.current = openingHours;
+  }, [openingHours]);
 
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -99,6 +123,11 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
         formattedAddress: result.formattedAddress ?? null,
       });
       if (!nameRef.current.trim() && result.name) setName(result.name);
+      if (!openingHoursRef.current.trim() && result.openingHoursPeriods && dayDate) {
+        const targetDay = new Date(`${dayDate}T00:00:00`).getDay();
+        const formatted = formatOpeningHoursForDay(result.openingHoursPeriods, targetDay);
+        if (formatted) setOpeningHours(formatted);
+      }
       setLocationMessage(result.formattedAddress
         ? `Exact location found: ${result.formattedAddress}`
         : "Exact location found.");
@@ -138,7 +167,7 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
         value: hasTime ? timeValue : null,
       },
       durationMinutes: initialPlace?.durationMinutes ?? null,
-      openingHours: initialPlace?.openingHours ?? null,
+      openingHours: openingHours.trim() || null,
       lastEntryTime: initialPlace?.lastEntryTime ?? null,
       notes: notes.trim(),
       reservationRequired: initialPlace?.reservationRequired ?? false,
@@ -211,6 +240,11 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
           <label>
             Note <span>Optional · one line</span>
             <input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Parking, food to try, reservation…" />
+          </label>
+
+          <label>
+            Opening hours <span>Optional · filled from Google when available</span>
+            <input value={openingHours} onChange={(event) => setOpeningHours(event.target.value)} placeholder="e.g. 11:00–22:00" />
           </label>
 
           <label className="maps-link-field">

@@ -61,7 +61,7 @@ async function searchPlace(textQuery, apiKey) {
     headers: {
       "content-type": "application/json",
       "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location",
+      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.regularOpeningHours",
     },
     body: JSON.stringify({ textQuery, languageCode: "zh-TW", regionCode: "JP", maxResultCount: 1 }),
   });
@@ -117,6 +117,7 @@ async function resolvePlace(request, env) {
       name: place.displayName?.text ?? suppliedName,
       formattedAddress: place.formattedAddress ?? null,
       googlePlaceId: place.id,
+      openingHoursPeriods: place.regularOpeningHours?.periods ?? null,
       resolvedUrl,
       accuracy: "confirmed",
       source: "places-api",
