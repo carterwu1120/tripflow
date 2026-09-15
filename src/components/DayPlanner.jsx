@@ -1,9 +1,18 @@
 import { useEffect, useState } from "react";
-import { routeStopsOf } from "../domain/plan";
+import { routeStopsOf, summarizeDay } from "../domain/plan";
 import CandidatePlaces from "./CandidatePlaces";
 import ItineraryTimeline from "./ItineraryTimeline";
+import MapSheet from "./MapSheet";
 import StaySection from "./StaySection";
 import TripMap from "./TripMap";
+
+function formatDuration(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
 
 export default function DayPlanner({
   days,
@@ -21,8 +30,8 @@ export default function DayPlanner({
   onAddTentative,
   onUpdateLocation,
   pendingLegPairs,
-  mobileView,
-  onChangeMobileView,
+  mapSheetSnap,
+  onChangeMapSheetSnap,
 }) {
   const [adjustingPlaceId, setAdjustingPlaceId] = useState(null);
   const selectedPlace = [...day.stops, ...candidates].find((place) => place.id === selectedPlaceId);
@@ -30,30 +39,12 @@ export default function DayPlanner({
   const routeStops = routeStopsOf(day);
   const tentativeStays = candidates.filter((candidate) => candidate.type === "hotel");
   const routeCandidates = candidates.filter((candidate) => candidate.type !== "hotel");
+  const summary = summarizeDay(day);
 
   useEffect(() => setAdjustingPlaceId(null), [day.id]);
 
   return (
     <main className="planner-shell">
-      <div className="mobile-mode-toggle" aria-label="Planner view">
-        <button
-          className={mobileView === "itinerary" ? "active" : ""}
-          aria-pressed={mobileView === "itinerary"}
-          type="button"
-          onClick={() => onChangeMobileView("itinerary")}
-        >
-          Itinerary
-        </button>
-        <button
-          className={mobileView === "map" ? "active" : ""}
-          aria-pressed={mobileView === "map"}
-          type="button"
-          onClick={() => onChangeMobileView("map")}
-        >
-          Map
-        </button>
-      </div>
-
       <nav className="day-tabs" aria-label="Trip days">
         {days.map((tripDay) => (
           <button
@@ -71,7 +62,7 @@ export default function DayPlanner({
 
       <div className="planner-grid">
         <section
-          className={`itinerary-pane ${mobileView === "map" ? "mobile-hidden" : ""}`}
+          className="itinerary-pane"
           aria-label={`Day ${day.dayNumber} itinerary`}
         >
           <div className="day-heading">
@@ -81,6 +72,15 @@ export default function DayPlanner({
             </div>
             <span className="stop-count">{routeStops.length} stops</span>
           </div>
+
+          {(summary.totalMinutes > 0 || summary.firstTime || summary.lastTime) && (
+            <p className="day-summary">
+              {[
+                summary.firstTime && summary.lastTime ? `${summary.firstTime} → ${summary.lastTime}` : null,
+                summary.totalMinutes > 0 ? `~${formatDuration(summary.totalMinutes)} driving${summary.isPartial ? " so far" : ""}` : null,
+              ].filter(Boolean).join(" · ")}
+            </p>
+          )}
 
           <StaySection
             confirmedStays={confirmedStays}
@@ -116,10 +116,7 @@ export default function DayPlanner({
           />
         </section>
 
-        <section
-          className={`map-pane ${mobileView === "itinerary" ? "mobile-hidden" : ""}`}
-          aria-label={`Day ${day.dayNumber} map`}
-        >
+        <MapSheet snap={mapSheetSnap} onSnapChange={onChangeMapSheetSnap} ariaLabel={`Day ${day.dayNumber} map`}>
           <TripMap
             dayId={day.id}
             stops={day.stops}
@@ -160,10 +157,10 @@ export default function DayPlanner({
                   <button type="button" onClick={() => setAdjustingPlaceId(selectedPlace.id)}>Adjust pin</button>
                 )
               )}
-              <button type="button" onClick={() => onChangeMobileView("itinerary")}>View in itinerary</button>
+              <button type="button" onClick={() => onChangeMapSheetSnap("peek")}>Collapse map</button>
             </div>
           )}
-        </section>
+        </MapSheet>
       </div>
     </main>
   );

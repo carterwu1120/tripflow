@@ -25,7 +25,7 @@ export default function App() {
   const plan = planState.present;
   const [selectedDayId, setSelectedDayId] = useState(() => initialTrip.days[0].id);
   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
-  const [mobileView, setMobileView] = useState("itinerary");
+  const [mapSheetSnap, setMapSheetSnap] = useState("peek");
   const [placeEditor, setPlaceEditor] = useState(null);
   const [cloudReady, setCloudReady] = useState(false);
   const [syncStatus, setSyncStatus] = useState("loading");
@@ -131,6 +131,11 @@ export default function App() {
     dispatch({ type: "update-location", placeId, latitude, longitude });
   }
 
+  function handleSelectPlace(placeId) {
+    setSelectedPlaceId(placeId);
+    if (placeId) setMapSheetSnap((prev) => (prev === "peek" ? "half" : prev));
+  }
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -164,7 +169,7 @@ export default function App() {
           setSelectedPlaceId(null);
         }}
         selectedPlaceId={selectedPlaceId}
-        onSelectPlace={setSelectedPlaceId}
+        onSelectPlace={handleSelectPlace}
         onReorder={handleReorder}
         onRemoveStop={handleRemoveStop}
         onEditStop={(stop) => setPlaceEditor({ kind: "confirmed", place: stop })}
@@ -174,8 +179,8 @@ export default function App() {
         onAddTentative={() => setPlaceEditor({ kind: "new", place: null, presetStatus: "tentative" })}
         onUpdateLocation={handleUpdateLocation}
         pendingLegPairs={pendingLegPairs}
-        mobileView={mobileView}
-        onChangeMobileView={setMobileView}
+        mapSheetSnap={mapSheetSnap}
+        onChangeMapSheetSnap={setMapSheetSnap}
       />
 
       {planState.notice && (

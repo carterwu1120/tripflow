@@ -32,6 +32,19 @@ export function routeStopsOf(day) {
   return day.stops.filter((stop) => stop.type !== "hotel");
 }
 
+export function summarizeDay(day) {
+  const routeStops = routeStopsOf(day);
+  const totalMinutes = day.travelLegs.reduce((sum, leg) => sum + (Number.isFinite(leg.minutes) ? leg.minutes : 0), 0);
+  const expectedLegCount = Math.max(routeStops.length - 1, 0);
+  return {
+    stopCount: routeStops.length,
+    totalMinutes,
+    isPartial: day.travelLegs.length < expectedLegCount,
+    firstTime: routeStops[0]?.time?.value ?? null,
+    lastTime: routeStops[routeStops.length - 1]?.time?.value ?? null,
+  };
+}
+
 function hasCoordinates(place) {
   return Number.isFinite(place?.latitude) && Number.isFinite(place?.longitude);
 }
