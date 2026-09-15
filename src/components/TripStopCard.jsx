@@ -24,6 +24,7 @@ export default function TripStopCard({
   isEditable,
   isDragging,
   dragHandleProps,
+  hasHoursConflict,
   onMoveUp,
   onMoveDown,
   canMoveUp,
@@ -79,6 +80,7 @@ export default function TripStopCard({
           {stop.lastEntryTime && <span className="detail-chip">Last entry {stop.lastEntryTime}</span>}
           {stop.locationAccuracy === "approximate" && <span className="detail-chip warm">Approximate location</span>}
           {stop.locationAccuracy === "missing" && <span className="detail-chip warm">Location missing</span>}
+          {hasHoursConflict && <span className="detail-chip warm">Outside opening hours</span>}
           <a
             href={stop.googleMapsUrl}
             target="_blank"

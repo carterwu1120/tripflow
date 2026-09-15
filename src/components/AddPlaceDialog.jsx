@@ -36,6 +36,7 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
   const [timeValue, setTimeValue] = useState(initialPlace?.time?.value ?? "");
   const [notes, setNotes] = useState(initialPlace?.notes ?? "");
   const [openingHours, setOpeningHours] = useState(initialPlace?.openingHours ?? "");
+  const [openingHoursPeriods, setOpeningHoursPeriods] = useState(initialPlace?.openingHoursPeriods ?? null);
   const [mapsUrl, setMapsUrl] = useState(initialPlace?.googleMapsUrl ?? "");
   const [coordinates, setCoordinates] = useState(() => {
     if (Number.isFinite(initialPlace?.latitude) && Number.isFinite(initialPlace?.longitude)) {
@@ -123,6 +124,7 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
         formattedAddress: result.formattedAddress ?? null,
       });
       if (!nameRef.current.trim() && result.name) setName(result.name);
+      if (result.openingHoursPeriods) setOpeningHoursPeriods(result.openingHoursPeriods);
       if (!openingHoursRef.current.trim() && result.openingHoursPeriods && dayDate) {
         const targetDay = new Date(`${dayDate}T00:00:00`).getDay();
         const formatted = formatOpeningHoursForDay(result.openingHoursPeriods, targetDay);
@@ -168,6 +170,7 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
       },
       durationMinutes: initialPlace?.durationMinutes ?? null,
       openingHours: openingHours.trim() || null,
+      openingHoursPeriods,
       lastEntryTime: initialPlace?.lastEntryTime ?? null,
       notes: notes.trim(),
       reservationRequired: initialPlace?.reservationRequired ?? false,

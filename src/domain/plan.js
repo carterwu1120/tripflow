@@ -32,6 +32,30 @@ export function routeStopsOf(day) {
   return day.stops.filter((stop) => stop.type !== "hotel");
 }
 
+export function stopHasOpeningHoursConflict(stop, dayDate) {
+  if (!stop.openingHoursPeriods?.length || !stop.time?.value || !dayDate) return false;
+
+  const alwaysOpen = stop.openingHoursPeriods.length === 1
+    && stop.openingHoursPeriods[0].open?.day === 0 && stop.openingHoursPeriods[0].open?.hour === 0
+    && stop.openingHoursPeriods[0].open?.minute === 0 && !stop.openingHoursPeriods[0].close;
+  if (alwaysOpen) return false;
+
+  const targetDay = new Date(`${dayDate}T00:00:00`).getDay();
+  const [hour, minute] = stop.time.value.split(":").map(Number);
+  const arrivalMinutes = hour * 60 + minute;
+
+  const todaysPeriods = stop.openingHoursPeriods.filter((period) => period.open?.day === targetDay);
+  if (!todaysPeriods.length) return true;
+
+  return !todaysPeriods.some((period) => {
+    const openMinutes = period.open.hour * 60 + period.open.minute;
+    if (!period.close) return arrivalMinutes >= openMinutes;
+    let closeMinutes = period.close.hour * 60 + period.close.minute;
+    if (period.close.day !== period.open.day) closeMinutes += 24 * 60;
+    return arrivalMinutes >= openMinutes && arrivalMinutes <= closeMinutes;
+  });
+}
+
 export function summarizeDay(day) {
   const routeStops = routeStopsOf(day);
   const totalMinutes = day.travelLegs.reduce((sum, leg) => sum + (Number.isFinite(leg.minutes) ? leg.minutes : 0), 0);
@@ -54,13 +78,16 @@ export function findMissingTravelLegPairs(routeStops, travelLegs = []) {
 
   return routeStops.slice(0, -1).flatMap((stop, index) => {
     const nextStop = routeStops[index + 1];
-    if (legByPair.get(`${stop.id}:${nextStop.id}`)?.polyline) return [];
+    const existingLeg = legByPair.get(`${stop.id}:${nextStop.id}`);
+    if (existingLeg?.polyline) return [];
+    if (existingLeg?.mode === "walking") return [];
     if (!hasCoordinates(stop) || !hasCoordinates(nextStop)) return [];
     return [{
       fromStopId: stop.id,
       toStopId: nextStop.id,
       from: { latitude: stop.latitude, longitude: stop.longitude },
       to: { latitude: nextStop.latitude, longitude: nextStop.longitude },
+      existingLeg,
     }];
   });
 }

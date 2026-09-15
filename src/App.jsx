@@ -93,8 +93,8 @@ export default function App() {
             dayId: day.id,
             fromStopId: pair.fromStopId,
             toStopId: pair.toStopId,
-            mode: result.mode,
-            minutes: result.minutes,
+            mode: pair.existingLeg?.mode ?? result.mode,
+            minutes: pair.existingLeg?.minutes ?? result.minutes,
             polyline: result.polyline,
           });
         })

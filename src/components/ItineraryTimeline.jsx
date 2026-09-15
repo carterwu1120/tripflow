@@ -2,7 +2,7 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
-import { routeStopsOf } from "../domain/plan";
+import { routeStopsOf, stopHasOpeningHoursConflict } from "../domain/plan";
 import TripStopCard from "./TripStopCard";
 
 function SortableStopRow({ stop, children }) {
@@ -70,6 +70,7 @@ export default function ItineraryTimeline({
                       isEditable
                       isDragging={isDragging}
                       dragHandleProps={dragHandleProps}
+                      hasHoursConflict={stopHasOpeningHoursConflict(stop, day.date)}
                       onMoveUp={() => index > 0 && onReorder(stop.id, routeStops[index - 1].id)}
                       onMoveDown={() =>
                         index < routeStops.length - 1 && onReorder(stop.id, routeStops[index + 1].id)
