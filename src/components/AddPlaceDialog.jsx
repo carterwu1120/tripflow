@@ -293,7 +293,14 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
 
           <label>
             {type === "hotel" ? "Check-in time?" : "Around what time?"} <span>Optional</span>
-            <input type="time" value={timeValue} onChange={(event) => setTimeValue(event.target.value)} />
+            <div className="time-field-row">
+              <input type="time" value={timeValue} onChange={(event) => setTimeValue(event.target.value)} />
+              {timeValue && (
+                <button type="button" className="secondary-button compact" onClick={() => setTimeValue("")}>
+                  Clear
+                </button>
+              )}
+            </div>
           </label>
 
           <label>

@@ -1562,6 +1562,21 @@ h3 {
   font-size: 13px;
 }
 
+.time-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-field-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.time-field-row button {
+  flex: none;
+}
+
 .quick-place-form select {
   width: 100%;
   min-height: 42px;
