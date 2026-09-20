@@ -47,12 +47,20 @@ async function expandGoogleUrl(value) {
   throw new Error("The Google Maps link redirected too many times.");
 }
 
+function looksLikePlaceName(candidate) {
+  if (!candidate) return false;
+  if (candidate.startsWith("data=")) return false;
+  if (candidate.includes("!")) return false;
+  return true;
+}
+
 function queryFromMapsUrl(value) {
   const url = new URL(value);
   const parameter = url.searchParams.get("query") ?? url.searchParams.get("q");
   if (parameter && !/^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(parameter)) return parameter;
   const match = decodeURIComponent(url.pathname).match(/\/maps\/place\/([^/]+)/);
-  return match?.[1]?.replace(/\+/g, " ") ?? null;
+  const candidate = match?.[1]?.replace(/\+/g, " ") ?? null;
+  return looksLikePlaceName(candidate) ? candidate : null;
 }
 
 async function searchPlace(textQuery, apiKey) {
