@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { routeStopsOf, summarizeDay } from "../domain/plan";
+import { routeStopsOf, staysForDay, summarizeDay } from "../domain/plan";
 import CandidatePlaces from "./CandidatePlaces";
 import ItineraryTimeline from "./ItineraryTimeline";
 import MapSheet from "./MapSheet";
@@ -18,6 +18,7 @@ export default function DayPlanner({
   days,
   day,
   candidates,
+  stays,
   onSelectDay,
   selectedPlaceId,
   onSelectPlace,
@@ -28,17 +29,20 @@ export default function DayPlanner({
   onRemoveCandidate,
   onConfirmCandidate,
   onAddTentative,
+  onEditStay,
+  onRemoveStay,
+  onConfirmStay,
   onUpdateLocation,
   pendingLegPairs,
   mapSheetSnap,
   onChangeMapSheetSnap,
 }) {
   const [adjustingPlaceId, setAdjustingPlaceId] = useState(null);
-  const selectedPlace = [...day.stops, ...candidates].find((place) => place.id === selectedPlaceId);
-  const confirmedStays = day.stops.filter((stop) => stop.type === "hotel");
+  const todaysStays = staysForDay(stays, day.date);
+  const confirmedStays = todaysStays.filter((stay) => stay.status === "confirmed");
+  const tentativeStays = todaysStays.filter((stay) => stay.status === "tentative");
+  const selectedPlace = [...day.stops, ...candidates, ...todaysStays].find((place) => place.id === selectedPlaceId);
   const routeStops = routeStopsOf(day);
-  const tentativeStays = candidates.filter((candidate) => candidate.type === "hotel");
-  const routeCandidates = candidates.filter((candidate) => candidate.type !== "hotel");
   const summary = summarizeDay(day);
 
   useEffect(() => setAdjustingPlaceId(null), [day.id]);
@@ -87,11 +91,9 @@ export default function DayPlanner({
             tentativeStays={tentativeStays}
             selectedPlaceId={selectedPlaceId}
             onSelectPlace={onSelectPlace}
-            onEditStop={onEditStop}
-            onRemoveStop={onRemoveStop}
-            onEditCandidate={onEditCandidate}
-            onRemoveCandidate={onRemoveCandidate}
-            onConfirmCandidate={onConfirmCandidate}
+            onEditStay={onEditStay}
+            onRemoveStay={onRemoveStay}
+            onConfirmStay={onConfirmStay}
           />
 
           <ItineraryTimeline
@@ -105,7 +107,7 @@ export default function DayPlanner({
           />
 
           <CandidatePlaces
-            candidates={routeCandidates}
+            candidates={candidates}
             dayNumber={day.dayNumber}
             onEditCandidate={onEditCandidate}
             onRemoveCandidate={onRemoveCandidate}
@@ -122,6 +124,7 @@ export default function DayPlanner({
             stops={day.stops}
             travelLegs={day.travelLegs}
             tentativePlaces={candidates.filter((candidate) => candidate.locationAccuracy !== "missing")}
+            stays={todaysStays}
             selectedPlaceId={selectedPlaceId}
             onSelectPlace={onSelectPlace}
             adjustingPlaceId={adjustingPlaceId}

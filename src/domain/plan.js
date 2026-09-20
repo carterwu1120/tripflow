@@ -11,25 +11,66 @@ function normalizeLocation(place) {
   };
 }
 
+function inferCheckOutDate(days, checkInDayId) {
+  const index = days.findIndex((day) => day.id === checkInDayId);
+  if (index < 0) return days[days.length - 1]?.date ?? null;
+  return days[index + 1]?.date ?? days[index].date;
+}
+
+function migrateLegacyStays(trip, candidates) {
+  const fromStops = trip.days.flatMap((day) =>
+    day.stops
+      .filter((stop) => stop.type === "hotel")
+      .map((stop) => ({
+        ...stop,
+        status: "confirmed",
+        checkInDate: day.date,
+        checkOutDate: inferCheckOutDate(trip.days, day.id),
+        checkInTime: stop.time?.value ?? null,
+      })),
+  );
+
+  const fromCandidates = candidates
+    .filter((candidate) => candidate.type === "hotel")
+    .map((candidate) => ({
+      ...candidate,
+      status: "tentative",
+      checkInDate: trip.days.find((day) => day.id === candidate.suggestedDayId)?.date ?? null,
+      checkOutDate: inferCheckOutDate(trip.days, candidate.suggestedDayId),
+      checkInTime: candidate.time?.value ?? null,
+    }))
+    .filter((stay) => stay.checkInDate);
+
+  return [...fromStops, ...fromCandidates];
+}
+
 export function normalizePlan(value) {
+  const days = value.trip.days.map((day) => ({
+    ...day,
+    stops: day.stops
+      .filter((stop) => stop.type !== "hotel")
+      .map((stop) => normalizeLocation({ ...stop, status: "confirmed" })),
+  }));
+  const candidates = (value.candidates ?? [])
+    .filter((place) => place.type !== "hotel")
+    .map((place) => normalizeLocation({ ...place, status: "tentative" }));
+  const stays = [...(value.stays ?? []), ...migrateLegacyStays(value.trip, value.candidates ?? [])]
+    .map((stay) => normalizeLocation({ ...stay, type: "hotel" }));
+
   return {
     ...value,
-    trip: {
-      ...value.trip,
-      days: value.trip.days.map((day) => ({
-        ...day,
-        stops: day.stops.map((stop) => normalizeLocation({ ...stop, status: "confirmed" })),
-      })),
-    },
-    candidates: (value.candidates ?? []).map((place) => normalizeLocation({
-      ...place,
-      status: "tentative",
-    })),
+    trip: { ...value.trip, days },
+    candidates,
+    stays,
   };
 }
 
+export function staysForDay(stays, dayDate) {
+  return stays.filter((stay) => stay.checkInDate <= dayDate && dayDate <= stay.checkOutDate);
+}
+
 export function routeStopsOf(day) {
-  return day.stops.filter((stop) => stop.type !== "hotel");
+  return day.stops;
 }
 
 export function stopHasOpeningHoursConflict(stop, dayDate) {
@@ -213,11 +254,26 @@ export function planReducer(state, action) {
         };
       });
       const candidates = plan.candidates.map(updatePlace);
+      const stays = plan.stays.map(updatePlace);
       return commit(state, {
         ...plan,
         trip: { ...plan.trip, days },
         candidates,
+        stays,
       }, `${updatedName} location confirmed`);
+    }
+    case "save-stay": {
+      const stay = action.stay;
+      const stays = [...plan.stays.filter(({ id }) => id !== stay.id), stay];
+      return commit(state, { ...plan, stays },
+        stay.status === "confirmed" ? `${stay.name} saved` : `${stay.name} saved as tentative`);
+    }
+    case "remove-stay": {
+      const removed = plan.stays.find((stay) => stay.id === action.stayId);
+      return commit(state, {
+        ...plan,
+        stays: plan.stays.filter((stay) => stay.id !== action.stayId),
+      }, `${removed?.name ?? "Stay"} deleted`);
     }
     case "set-travel-leg": {
       const present = updateDay(plan, action.dayId, (day) => ({

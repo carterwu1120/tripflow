@@ -1,11 +1,14 @@
-function formatStayTime(time) {
-  if (!time?.value || time.kind === "none") return null;
-  return time.kind === "approximate" ? `~${time.value}` : time.value;
+function formatDateShort(iso) {
+  if (!iso) return "";
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatStayRange(stay) {
+  const range = `${formatDateShort(stay.checkInDate)} → ${formatDateShort(stay.checkOutDate)}`;
+  return stay.checkInTime ? `${range} · arriving ~${stay.checkInTime}` : range;
 }
 
 function StayCard({ place, isTentative, isSelected, onSelect, onEdit, onRemove, onConfirm }) {
-  const time = formatStayTime(place.time);
-
   return (
     <article className={`candidate-card stay-card ${isSelected ? "selected" : ""}`}>
       <div className="candidate-content">
@@ -17,7 +20,7 @@ function StayCard({ place, isTentative, isSelected, onSelect, onEdit, onRemove, 
         </div>
         <h3>{place.name}</h3>
         <div className="candidate-summary">
-          {time && <span>{time}</span>}
+          <span>{formatStayRange(place)}</span>
           {place.notes && <span>{place.notes}</span>}
         </div>
         {place.locationAccuracy === "missing" && (
@@ -57,11 +60,9 @@ export default function StaySection({
   tentativeStays,
   selectedPlaceId,
   onSelectPlace,
-  onEditStop,
-  onRemoveStop,
-  onEditCandidate,
-  onRemoveCandidate,
-  onConfirmCandidate,
+  onEditStay,
+  onRemoveStay,
+  onConfirmStay,
 }) {
   if (!confirmedStays.length && !tentativeStays.length) return null;
 
@@ -70,7 +71,7 @@ export default function StaySection({
       <div className="candidate-heading-row">
         <div>
           <p className="eyebrow">Where you're staying</p>
-          <h2 id="stay-heading">Tonight's stay</h2>
+          <h2 id="stay-heading">This day's stay</h2>
         </div>
       </div>
 
@@ -82,8 +83,8 @@ export default function StaySection({
             isTentative={false}
             isSelected={selectedPlaceId === stay.id}
             onSelect={onSelectPlace}
-            onEdit={onEditStop}
-            onRemove={onRemoveStop}
+            onEdit={onEditStay}
+            onRemove={onRemoveStay}
           />
         ))}
         {tentativeStays.map((stay) => (
@@ -93,9 +94,9 @@ export default function StaySection({
             isTentative
             isSelected={selectedPlaceId === stay.id}
             onSelect={onSelectPlace}
-            onEdit={onEditCandidate}
-            onRemove={onRemoveCandidate}
-            onConfirm={onConfirmCandidate}
+            onEdit={onEditStay}
+            onRemove={onRemoveStay}
+            onConfirm={onConfirmStay}
           />
         ))}
       </div>

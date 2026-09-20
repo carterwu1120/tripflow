@@ -28,12 +28,20 @@ function formatOpeningHoursForDay(periods, targetDay) {
     .join(", ");
 }
 
-export default function AddPlaceDialog({ initialPlace, presetType = "other", presetStatus = "confirmed", dayLabel, dayDate, onClose, onSavePlace }) {
+function addDays(dateString, days) {
+  const date = new Date(`${dateString}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export default function AddPlaceDialog({ initialPlace, presetType = "other", presetStatus = "confirmed", dayLabel, dayDate, onClose, onSavePlace, onSaveStay }) {
   const [type, setType] = useState(initialPlace?.type ?? presetType);
   const [status, setStatus] = useState(initialPlace?.status ?? presetStatus);
   const dialogRef = useRef(null);
   const [name, setName] = useState(initialPlace?.name ?? "");
-  const [timeValue, setTimeValue] = useState(initialPlace?.time?.value ?? "");
+  const [timeValue, setTimeValue] = useState(initialPlace?.time?.value ?? initialPlace?.checkInTime ?? "");
+  const [checkInDate, setCheckInDate] = useState(initialPlace?.checkInDate ?? dayDate ?? "");
+  const [checkOutDate, setCheckOutDate] = useState(initialPlace?.checkOutDate ?? "");
   const [notes, setNotes] = useState(initialPlace?.notes ?? "");
   const [openingHours, setOpeningHours] = useState(initialPlace?.openingHours ?? "");
   const [openingHoursPeriods, setOpeningHoursPeriods] = useState(initialPlace?.openingHoursPeriods ?? null);
@@ -152,8 +160,41 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapsUrl]);
 
+  function handleCheckInDateChange(value) {
+    setCheckInDate(value);
+    if (!checkOutDate && value) setCheckOutDate(addDays(value, 1));
+  }
+
   function handleSubmit(event) {
     event.preventDefault();
+
+    if (type === "hotel") {
+      onSaveStay({
+        ...initialPlace,
+        id: initialPlace?.id ?? `stay-${Date.now()}`,
+        name: name.trim(),
+        type: "hotel",
+        status,
+        checkInDate,
+        checkOutDate: checkOutDate || checkInDate,
+        checkInTime: timeValue || null,
+        latitude: coordinates?.latitude ?? null,
+        longitude: coordinates?.longitude ?? null,
+        notes: notes.trim(),
+        openingHours: openingHours.trim() || null,
+        openingHoursPeriods,
+        reservationRequired: initialPlace?.reservationRequired ?? false,
+        coordinatesConfirmed: coordinates?.accuracy === "confirmed",
+        locationAccuracy: coordinates?.accuracy ?? "missing",
+        locationSource: coordinates?.source ?? null,
+        googlePlaceId: resolvedDetails.googlePlaceId,
+        formattedAddress: resolvedDetails.formattedAddress,
+        googleMapsUrl: mapsUrl.trim()
+          || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} Okinawa`)}`,
+      });
+      return;
+    }
+
     const hasTime = Boolean(timeValue);
 
     onSavePlace({
@@ -227,7 +268,9 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
             </fieldset>
           </div>
           <p className="status-explanation">
-            {status === "confirmed" ? "Included in the itinerary route." : "Shown on the map for comparison, but not added to the route."}
+            {type === "hotel"
+              ? (status === "confirmed" ? "This is where you're staying." : "A candidate hotel, shown on the map for comparison.")
+              : (status === "confirmed" ? "Included in the itinerary route." : "Shown on the map for comparison, but not added to the route.")}
           </p>
 
           <label>
@@ -235,8 +278,21 @@ export default function AddPlaceDialog({ initialPlace, presetType = "other", pre
             <input value={name} onChange={(event) => setName(event.target.value)} placeholder={type === "hotel" ? "Hotel name" : "Where do you want to go?"} autoFocus required />
           </label>
 
+          {type === "hotel" ? (
+            <div className="quick-choice-row">
+              <label>
+                Check-in date
+                <input type="date" value={checkInDate} onChange={(event) => handleCheckInDateChange(event.target.value)} required />
+              </label>
+              <label>
+                Check-out date
+                <input type="date" value={checkOutDate} onChange={(event) => setCheckOutDate(event.target.value)} required />
+              </label>
+            </div>
+          ) : null}
+
           <label>
-            Around what time? <span>Optional</span>
+            {type === "hotel" ? "Check-in time?" : "Around what time?"} <span>Optional</span>
             <input type="time" value={timeValue} onChange={(event) => setTimeValue(event.target.value)} />
           </label>
 

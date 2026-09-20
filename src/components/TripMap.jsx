@@ -76,6 +76,7 @@ export default function TripMap({
   stops,
   travelLegs,
   tentativePlaces,
+  stays,
   selectedPlaceId,
   onSelectPlace,
   adjustingPlaceId,
@@ -128,12 +129,7 @@ export default function TripMap({
     markerLayer.clearLayers();
     routeLayerRef.current?.clearLayers();
 
-    const routeStops = stops.filter((stop) => stop.type !== "hotel");
-    const hotelStops = stops.filter((stop) => stop.type === "hotel" && hasCoordinates(stop));
-    const routeTentatives = tentativePlaces.filter((place) => place.type !== "hotel");
-    const hotelTentatives = tentativePlaces.filter((place) => place.type === "hotel" && hasCoordinates(place));
-
-    const mappedStops = routeStops.filter(hasCoordinates);
+    const mappedStops = stops.filter(hasCoordinates);
     const coordinates = mappedStops.map((stop) => [stop.latitude, stop.longitude]);
     const tentativeCoordinates = tentativePlaces.filter(hasCoordinates).map((place) => [place.latitude, place.longitude]);
     const tentativeSignature = tentativePlaces.map((place) => `${place.id}:${place.latitude}:${place.longitude}`).join("|");
@@ -161,7 +157,7 @@ export default function TripMap({
     });
 
     mappedStops.forEach((stop) => {
-      const index = routeStops.findIndex(({ id }) => id === stop.id);
+      const index = stops.findIndex(({ id }) => id === stop.id);
       const marker = L.marker([stop.latitude, stop.longitude], {
         icon: markerIcon(index + 1, stop.id === selectedPlaceId, stop.locationAccuracy),
         riseOnHover: true,
@@ -182,27 +178,27 @@ export default function TripMap({
       marker.addTo(markerLayer);
     });
 
-    hotelStops.forEach((stop) => {
-      const marker = L.marker([stop.latitude, stop.longitude], {
-        icon: hotelMarkerIcon(stop.id === selectedPlaceId, false, stop.locationAccuracy),
+    stays.filter((stay) => stay.status === "confirmed" && hasCoordinates(stay)).forEach((stay) => {
+      const marker = L.marker([stay.latitude, stay.longitude], {
+        icon: hotelMarkerIcon(stay.id === selectedPlaceId, false, stay.locationAccuracy),
         riseOnHover: true,
-        title: `Stay: ${stop.name}`,
-        draggable: stop.id === adjustingPlaceId,
+        title: `Stay: ${stay.name}`,
+        draggable: stay.id === adjustingPlaceId,
       });
-      marker.bindTooltip(`Stay · ${stop.name}`, {
+      marker.bindTooltip(`Stay · ${stay.name}`, {
         direction: "top",
         offset: [0, -30],
         opacity: 0.95,
       });
-      marker.on("click", () => onSelectPlace(stop.id));
+      marker.on("click", () => onSelectPlace(stay.id));
       marker.on("dragend", (event) => {
         const { lat, lng } = event.target.getLatLng();
-        onLocationChange(stop.id, lat, lng);
+        onLocationChange(stay.id, lat, lng);
       });
       marker.addTo(markerLayer);
     });
 
-    routeTentatives.filter(hasCoordinates).forEach((place, index) => {
+    tentativePlaces.filter(hasCoordinates).forEach((place, index) => {
       const marker = L.marker([place.latitude, place.longitude], {
         icon: tentativeMarkerIcon(index + 1, place.id === selectedPlaceId, place.locationAccuracy),
         riseOnHover: true,
@@ -222,34 +218,34 @@ export default function TripMap({
       marker.addTo(markerLayer);
     });
 
-    hotelTentatives.forEach((place) => {
-      const marker = L.marker([place.latitude, place.longitude], {
-        icon: hotelMarkerIcon(place.id === selectedPlaceId, true, place.locationAccuracy),
+    stays.filter((stay) => stay.status === "tentative" && hasCoordinates(stay)).forEach((stay) => {
+      const marker = L.marker([stay.latitude, stay.longitude], {
+        icon: hotelMarkerIcon(stay.id === selectedPlaceId, true, stay.locationAccuracy),
         riseOnHover: true,
-        title: `Considering stay: ${place.name}`,
-        draggable: place.id === adjustingPlaceId,
+        title: `Considering stay: ${stay.name}`,
+        draggable: stay.id === adjustingPlaceId,
       });
-      marker.bindTooltip(`Considering · ${place.name}`, {
+      marker.bindTooltip(`Considering · ${stay.name}`, {
         direction: "top",
         offset: [0, -30],
         opacity: 0.95,
       });
-      marker.on("click", () => onSelectPlace(place.id));
+      marker.on("click", () => onSelectPlace(stay.id));
       marker.on("dragend", (event) => {
         const { lat, lng } = event.target.getLatLng();
-        onLocationChange(place.id, lat, lng);
+        onLocationChange(stay.id, lat, lng);
       });
       marker.addTo(markerLayer);
     });
 
-    const hotelCoordinates = hotelStops.map((stop) => [stop.latitude, stop.longitude]);
-    const visibleCoordinates = [...coordinates, ...tentativeCoordinates, ...hotelCoordinates];
+    const stayCoordinates = stays.filter(hasCoordinates).map((stay) => [stay.latitude, stay.longitude]);
+    const visibleCoordinates = [...coordinates, ...tentativeCoordinates, ...stayCoordinates];
     if (!hasFitBoundsRef.current && visibleCoordinates.length) {
       map.fitBounds(visibleCoordinates, { padding: [60, 60] });
       hasFitBoundsRef.current = true;
     }
 
-    const selectedPlace = [...stops, ...tentativePlaces].find((place) => place.id === selectedPlaceId);
+    const selectedPlace = [...stops, ...tentativePlaces, ...stays].find((place) => place.id === selectedPlaceId);
     if (hasCoordinates(selectedPlace)) {
       map.flyTo(
         [selectedPlace.latitude, selectedPlace.longitude],
@@ -257,7 +253,7 @@ export default function TripMap({
         { duration: 0.65 },
       );
     }
-  }, [dayId, stops, travelLegs, tentativePlaces, selectedPlaceId, onSelectPlace, adjustingPlaceId, onLocationChange]);
+  }, [dayId, stops, travelLegs, tentativePlaces, stays, selectedPlaceId, onSelectPlace, adjustingPlaceId, onLocationChange]);
 
   return <div className="map-container" ref={containerRef} />;
 }

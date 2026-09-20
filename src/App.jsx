@@ -127,6 +127,16 @@ export default function App() {
     setSelectedPlaceId(place.id);
   }
 
+  function handleSaveStay(stay) {
+    dispatch({ type: "save-stay", stay });
+    setPlaceEditor(null);
+    setSelectedPlaceId(stay.id);
+  }
+
+  function handleRemoveStay(stayId) {
+    dispatch({ type: "remove-stay", stayId });
+  }
+
   function handleUpdateLocation(placeId, latitude, longitude) {
     dispatch({ type: "update-location", placeId, latitude, longitude });
   }
@@ -164,6 +174,7 @@ export default function App() {
         days={days}
         day={day}
         candidates={tentativePlaces}
+        stays={plan.stays}
         onSelectDay={(dayId) => {
           setSelectedDayId(dayId);
           setSelectedPlaceId(null);
@@ -177,6 +188,9 @@ export default function App() {
         onRemoveCandidate={handleRemoveTentative}
         onConfirmCandidate={(candidate) => handleSavePlace({ ...candidate, status: "confirmed" })}
         onAddTentative={() => setPlaceEditor({ kind: "new", place: null, presetStatus: "tentative" })}
+        onEditStay={(stay) => setPlaceEditor({ kind: "stay", place: stay })}
+        onRemoveStay={handleRemoveStay}
+        onConfirmStay={(stay) => handleSaveStay({ ...stay, status: "confirmed" })}
         onUpdateLocation={handleUpdateLocation}
         pendingLegPairs={pendingLegPairs}
         mapSheetSnap={mapSheetSnap}
@@ -199,6 +213,7 @@ export default function App() {
           dayDate={day.date}
           onClose={() => setPlaceEditor(null)}
           onSavePlace={handleSavePlace}
+          onSaveStay={handleSaveStay}
         />
       )}
     </div>
