@@ -5,6 +5,7 @@ import ItineraryTimeline from "./ItineraryTimeline";
 import MapSheet from "./MapSheet";
 import StaySection from "./StaySection";
 import TripMap from "./TripMap";
+import { TripTipsVariantB, TripTipsVariantC } from "./TripTipsPrototype";
 
 function formatDuration(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60);
@@ -36,6 +37,8 @@ export default function DayPlanner({
   pendingLegPairs,
   mapSheetSnap,
   onChangeMapSheetSnap,
+  tipsVariant,
+  tipsPrototype,
 }) {
   const [adjustingPlaceId, setAdjustingPlaceId] = useState(null);
   const todaysStays = staysForDay(stays, day.date);
@@ -49,6 +52,7 @@ export default function DayPlanner({
 
   return (
     <main className="planner-shell">
+      {tipsVariant === "B" && <TripTipsVariantB {...tipsPrototype} />}
       <nav className="day-tabs" aria-label="Trip days">
         {days.map((tripDay) => (
           <button
@@ -85,6 +89,8 @@ export default function DayPlanner({
               ].filter(Boolean).join(" · ")}
             </p>
           )}
+
+          {tipsVariant === "C" && <TripTipsVariantC {...tipsPrototype} />}
 
           <StaySection
             confirmedStays={confirmedStays}

@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import AddPlaceDialog from "./components/AddPlaceDialog";
 import DayPlanner from "./components/DayPlanner";
+import { TripTipsPrototypeSwitcher, TripTipsVariantA, useTipsVariant, useTripTipsPrototype } from "./components/TripTipsPrototype";
 import { initialCandidates, initialTrip } from "./data/okinawaDay3";
 import { findMissingTravelLegPairs, normalizePlan, planReducer, routeStopsOf } from "./domain/plan";
 import { loadRemotePlan, saveRemotePlan } from "./services/planSync";
@@ -31,6 +32,8 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState("loading");
   const [pendingLegPairs, setPendingLegPairs] = useState(() => new Set());
   const attemptedLegPairsRef = useRef(new Set());
+  const [tipsVariant, setTipsVariant] = useTipsVariant();
+  const tipsPrototype = useTripTipsPrototype();
 
   const days = plan.trip.days;
   const day = days.find((candidateDay) => candidateDay.id === selectedDayId) ?? days[0];
@@ -167,6 +170,7 @@ export default function App() {
           <button className="primary-button" type="button" onClick={() => setPlaceEditor({ kind: "new", place: null })}>
             + Add place
           </button>
+          {tipsVariant === "A" && <TripTipsVariantA {...tipsPrototype} />}
         </div>
       </header>
 
@@ -195,6 +199,8 @@ export default function App() {
         pendingLegPairs={pendingLegPairs}
         mapSheetSnap={mapSheetSnap}
         onChangeMapSheetSnap={setMapSheetSnap}
+        tipsVariant={tipsVariant}
+        tipsPrototype={tipsPrototype}
       />
 
       {planState.notice && (
@@ -216,6 +222,7 @@ export default function App() {
           onSaveStay={handleSaveStay}
         />
       )}
+      <TripTipsPrototypeSwitcher variant={tipsVariant} setVariant={setTipsVariant} />
     </div>
   );
 }
