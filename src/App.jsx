@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import AddPlaceDialog from "./components/AddPlaceDialog";
 import DayPlanner from "./components/DayPlanner";
+import TripTips from "./components/TripTips";
 import { initialCandidates, initialTrip } from "./data/okinawaDay3";
 import { findMissingTravelLegPairs, normalizePlan, planReducer, routeStopsOf } from "./domain/plan";
 import { loadRemotePlan, saveRemotePlan } from "./services/planSync";
@@ -137,6 +138,14 @@ export default function App() {
     dispatch({ type: "remove-stay", stayId });
   }
 
+  function handleAddTip(text, url) {
+    dispatch({ type: "add-tip", tip: { id: `tip-${Date.now()}`, text, url } });
+  }
+
+  function handleRemoveTip(tipId) {
+    dispatch({ type: "remove-tip", tipId });
+  }
+
   function handleUpdateLocation(placeId, latitude, longitude) {
     dispatch({ type: "update-location", placeId, latitude, longitude });
   }
@@ -167,6 +176,7 @@ export default function App() {
           <button className="primary-button" type="button" onClick={() => setPlaceEditor({ kind: "new", place: null })}>
             + Add place
           </button>
+          <TripTips tips={plan.tips} onAdd={handleAddTip} onRemove={handleRemoveTip} />
         </div>
       </header>
 

@@ -62,6 +62,7 @@ export function normalizePlan(value) {
     trip: { ...value.trip, days },
     candidates,
     stays,
+    tips: value.tips ?? [],
   };
 }
 
@@ -274,6 +275,15 @@ export function planReducer(state, action) {
         ...plan,
         stays: plan.stays.filter((stay) => stay.id !== action.stayId),
       }, `${removed?.name ?? "Stay"} deleted`);
+    }
+    case "add-tip": {
+      return commit(state, { ...plan, tips: [...plan.tips, action.tip] }, "Tip saved");
+    }
+    case "remove-tip": {
+      return commit(state, {
+        ...plan,
+        tips: plan.tips.filter((tip) => tip.id !== action.tipId),
+      }, "Tip deleted");
     }
     case "set-travel-leg": {
       const present = updateDay(plan, action.dayId, (day) => ({

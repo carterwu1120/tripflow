@@ -105,6 +105,87 @@ textarea:focus-visible,
   gap: 14px;
 }
 
+.tips-widget {
+  position: relative;
+}
+
+.tips-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  max-height: 360px;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  text-align: left;
+  z-index: 2000;
+}
+
+.tips-popover strong {
+  font-size: 13px;
+}
+
+.tips-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tips-list {
+  display: grid;
+  gap: 2px;
+}
+
+.tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.tip-row-content p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tip-row-content a {
+  font-size: 10px;
+  color: var(--green);
+}
+
+.tip-remove-button {
+  flex: none;
+  background: none;
+  border: 0;
+  color: var(--coral);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.tip-add-form {
+  display: grid;
+  gap: 6px;
+}
+
+.tip-add-form input {
+  padding: 8px 10px;
+  border: 1px solid #cdd5cf;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.tip-add-form button {
+  justify-self: start;
+}
+
 .sync-status {
   margin: 0;
   color: var(--muted);
@@ -1121,6 +1202,10 @@ h3 {
     height: auto;
     min-height: 72px;
     padding: 12px 16px;
+  }
+
+  .tips-popover {
+    width: min(300px, calc(100vw - 32px));
   }
 
   .trip-name {
