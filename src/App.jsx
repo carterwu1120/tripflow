@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import AddPlaceDialog from "./components/AddPlaceDialog";
 import DayPlanner from "./components/DayPlanner";
+import ExpenseTracker from "./components/ExpenseTracker";
 import TripTips from "./components/TripTips";
 import { initialCandidates, initialTrip } from "./data/okinawaDay3";
 import { findMissingTravelLegPairs, normalizePlan, planReducer, routeStopsOf } from "./domain/plan";
@@ -146,6 +147,18 @@ export default function App() {
     dispatch({ type: "remove-tip", tipId });
   }
 
+  function handleAddExpense(expense) {
+    dispatch({ type: "add-expense", expense: { id: `expense-${Date.now()}`, ...expense } });
+  }
+
+  function handleRemoveExpense(expenseId) {
+    dispatch({ type: "remove-expense", expenseId });
+  }
+
+  function handleSetExchangeRate(rate) {
+    dispatch({ type: "set-exchange-rate", rate });
+  }
+
   function handleUpdateLocation(placeId, latitude, longitude) {
     dispatch({ type: "update-location", placeId, latitude, longitude });
   }
@@ -177,6 +190,13 @@ export default function App() {
             + Add place
           </button>
           <TripTips tips={plan.tips} onAdd={handleAddTip} onRemove={handleRemoveTip} />
+          <ExpenseTracker
+            expenses={plan.expenses}
+            jpyToTwdRate={plan.jpyToTwdRate}
+            onAdd={handleAddExpense}
+            onRemove={handleRemoveExpense}
+            onSetRate={handleSetExchangeRate}
+          />
         </div>
       </header>
 

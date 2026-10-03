@@ -44,6 +44,8 @@ function migrateLegacyStays(trip, candidates) {
   return [...fromStops, ...fromCandidates];
 }
 
+export const DEFAULT_JPY_TO_TWD_RATE = 0.21;
+
 export function normalizePlan(value) {
   const days = value.trip.days.map((day) => ({
     ...day,
@@ -63,7 +65,17 @@ export function normalizePlan(value) {
     candidates,
     stays,
     tips: value.tips ?? [],
+    expenses: value.expenses ?? [],
+    jpyToTwdRate: value.jpyToTwdRate ?? DEFAULT_JPY_TO_TWD_RATE,
   };
+}
+
+export function summarizeExpenses(expenses, jpyToTwdRate) {
+  const totalJpy = expenses.filter((expense) => expense.currency === "JPY")
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const totalTwd = expenses.filter((expense) => expense.currency === "TWD")
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  return { totalJpy, totalTwd, grandTotalTwd: totalTwd + totalJpy * jpyToTwdRate };
 }
 
 export function staysForDay(stays, dayDate) {
@@ -284,6 +296,18 @@ export function planReducer(state, action) {
         ...plan,
         tips: plan.tips.filter((tip) => tip.id !== action.tipId),
       }, "Tip deleted");
+    }
+    case "add-expense": {
+      return commit(state, { ...plan, expenses: [...plan.expenses, action.expense] }, "Expense added");
+    }
+    case "remove-expense": {
+      return commit(state, {
+        ...plan,
+        expenses: plan.expenses.filter((expense) => expense.id !== action.expenseId),
+      }, "Expense deleted");
+    }
+    case "set-exchange-rate": {
+      return { ...state, present: { ...plan, jpyToTwdRate: action.rate } };
     }
     case "set-travel-leg": {
       const present = updateDay(plan, action.dayId, (day) => ({
