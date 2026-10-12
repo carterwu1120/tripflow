@@ -46,6 +46,14 @@ function migrateLegacyStays(trip, candidates) {
 
 export const DEFAULT_JPY_TO_TWD_RATE = 0.21;
 
+// Seeded once for plans saved before todos existed; cleared todos stay cleared
+// because an empty array is not nullish.
+const DEFAULT_TODOS = [
+  { id: "todo-rental-car", text: "租車預訂", done: false },
+  { id: "todo-hotel", text: "飯店訂房", done: false },
+  { id: "todo-fun-pass", text: "沖繩 Fun PASS", done: false },
+];
+
 export function normalizePlan(value) {
   const days = value.trip.days.map((day) => ({
     ...day,
@@ -65,6 +73,7 @@ export function normalizePlan(value) {
     candidates,
     stays,
     tips: value.tips ?? [],
+    todos: value.todos ?? DEFAULT_TODOS,
     expenses: value.expenses ?? [],
     jpyToTwdRate: value.jpyToTwdRate ?? DEFAULT_JPY_TO_TWD_RATE,
   };
@@ -296,6 +305,24 @@ export function planReducer(state, action) {
         ...plan,
         tips: plan.tips.filter((tip) => tip.id !== action.tipId),
       }, "Tip deleted");
+    }
+    case "add-todo": {
+      return commit(state, { ...plan, todos: [...plan.todos, action.todo] }, "To-do added");
+    }
+    case "toggle-todo": {
+      const toggled = plan.todos.find((todo) => todo.id === action.todoId);
+      return commit(state, {
+        ...plan,
+        todos: plan.todos.map((todo) =>
+          todo.id === action.todoId ? { ...todo, done: !todo.done } : todo,
+        ),
+      }, toggled?.done ? `${toggled.text} reopened` : `${toggled?.text ?? "To-do"} done`);
+    }
+    case "remove-todo": {
+      return commit(state, {
+        ...plan,
+        todos: plan.todos.filter((todo) => todo.id !== action.todoId),
+      }, "To-do deleted");
     }
     case "add-expense": {
       return commit(state, { ...plan, expenses: [...plan.expenses, action.expense] }, "Expense added");

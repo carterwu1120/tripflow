@@ -70,11 +70,13 @@ textarea:focus-visible,
 }
 
 .app-header {
-  height: 78px;
-  padding: 0 30px;
+  height: auto;
+  min-height: 78px;
+  padding: 14px 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 24px;
   background: rgba(255, 253, 248, 0.96);
   border-bottom: 1px solid var(--line);
@@ -102,14 +104,19 @@ textarea:focus-visible,
 .header-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 14px;
+  row-gap: 8px;
 }
 
-.tips-widget {
+.tips-widget,
+.todos-widget {
   position: relative;
 }
 
-.tips-popover {
+.tips-popover,
+.todos-popover {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -127,7 +134,8 @@ textarea:focus-visible,
   z-index: 2000;
 }
 
-.tips-popover strong {
+.tips-popover strong,
+.todos-popover strong {
   font-size: 13px;
 }
 
@@ -137,12 +145,14 @@ textarea:focus-visible,
   font-size: 12px;
 }
 
-.tips-list {
+.tips-list,
+.todos-list {
   display: grid;
   gap: 2px;
 }
 
-.tip-row {
+.tip-row,
+.todo-row {
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -168,6 +178,29 @@ textarea:focus-visible,
   color: var(--coral);
   cursor: pointer;
   font-size: 13px;
+}
+
+.todo-row-content {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.todo-row-content input {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+
+.todo-row.done .todo-row-content span {
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
 .tip-add-form {
@@ -1319,6 +1352,7 @@ h3 {
   }
 
   .tips-popover,
+  .todos-popover,
   .expense-popover {
     width: min(300px, calc(100vw - 32px));
   }

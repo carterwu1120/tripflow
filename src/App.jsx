@@ -3,6 +3,7 @@ import AddPlaceDialog from "./components/AddPlaceDialog";
 import DayPlanner from "./components/DayPlanner";
 import ExpenseTracker from "./components/ExpenseTracker";
 import TripTips from "./components/TripTips";
+import TripTodos from "./components/TripTodos";
 import { initialCandidates, initialTrip } from "./data/okinawaDay3";
 import { findMissingTravelLegPairs, normalizePlan, planReducer, routeStopsOf } from "./domain/plan";
 import { loadRemotePlan, saveRemotePlan } from "./services/planSync";
@@ -147,6 +148,18 @@ export default function App() {
     dispatch({ type: "remove-tip", tipId });
   }
 
+  function handleAddTodo(text) {
+    dispatch({ type: "add-todo", todo: { id: `todo-${Date.now()}`, text, done: false } });
+  }
+
+  function handleToggleTodo(todoId) {
+    dispatch({ type: "toggle-todo", todoId });
+  }
+
+  function handleRemoveTodo(todoId) {
+    dispatch({ type: "remove-todo", todoId });
+  }
+
   function handleAddExpense(expense) {
     dispatch({ type: "add-expense", expense: { id: `expense-${Date.now()}`, ...expense } });
   }
@@ -189,6 +202,12 @@ export default function App() {
           <button className="primary-button" type="button" onClick={() => setPlaceEditor({ kind: "new", place: null })}>
             + Add place
           </button>
+          <TripTodos
+            todos={plan.todos}
+            onAdd={handleAddTodo}
+            onToggle={handleToggleTodo}
+            onRemove={handleRemoveTodo}
+          />
           <TripTips tips={plan.tips} onAdd={handleAddTip} onRemove={handleRemoveTip} />
           <ExpenseTracker
             expenses={plan.expenses}
