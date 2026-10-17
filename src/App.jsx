@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import AddPlaceDialog from "./components/AddPlaceDialog";
+import AiPlayground from "./components/AiPlayground";
 import DayPlanner from "./components/DayPlanner";
 import ExpenseTracker from "./components/ExpenseTracker";
 import TripTips from "./components/TripTips";
@@ -11,6 +12,7 @@ import { computeTravelTime } from "./services/travelTime";
 
 const STORAGE_KEY = "tripflow-okinawa-2027-v3";
 const LEGACY_STORAGE_KEY = "tripflow-okinawa-2027-v2";
+const SHOW_AI_PLAYGROUND = new URLSearchParams(window.location.search).has("ai-test");
 
 function loadPlan() {
   try {
@@ -218,6 +220,8 @@ export default function App() {
           />
         </div>
       </header>
+
+      {SHOW_AI_PLAYGROUND && <AiPlayground />}
 
       <DayPlanner
         days={days}

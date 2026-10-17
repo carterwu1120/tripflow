@@ -1,3 +1,5 @@
+import { getPlanStatus, PlanError, runResponse } from "./chatgptPlan.js";
+
 const GOOGLE_HOSTS = new Set(["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl", "goo.gl"]);
 const TRIP_ID = "okinawa-2027";
 
@@ -245,12 +247,140 @@ async function planDocument(request, env, ctx) {
   return json({ version: saved.version, updatedAt, updatedBy: email }, 200, { ...cors, "cache-control": "no-store" });
 }
 
+const RECEIPT_CATEGORIES = ["flight", "hotel", "rental-car", "food", "shopping", "other"];
+const MAX_IMAGE_DATA_URL_LENGTH = 8_000_000;
+
+const RECEIPT_INSTRUCTIONS = `You read a photo of a shop receipt and reply with one JSON object and nothing else.
+Fields:
+- "label": the shop or merchant name as printed, in its original language.
+- "amount": the final total actually charged, as a plain number without currency symbols or separators.
+- "currency": the ISO 4217 code, such as "JPY" or "TWD", inferred from the receipt.
+- "category": one of ${RECEIPT_CATEGORIES.join(", ")}.
+The final total is the line labelled 合計, 総合計, お会計, 總計 or Total. Never use the cash handed over (お預り, 預り金) or the change returned (お釣り, 找零), and never use a subtotal (小計) when a total is printed.
+Use null for any field you cannot read.`;
+
+// These endpoints spend the owner's ChatGPT plan, so they require the same
+// Cloudflare Access identity as cloud sync. Local `wrangler dev` has no Access
+// identity, so `npm run worker:dev` passes AI_ALLOW_UNAUTHENTICATED=1. The
+// bypass also requires a localhost hostname, so the flag alone never opens
+// the production deployment.
+function isLocalBypass(request, env) {
+  const { hostname } = new URL(request.url);
+  return env.AI_ALLOW_UNAUTHENTICATED === "1" && (hostname === "localhost" || hostname === "127.0.0.1");
+}
+
+async function aiGuard(request, env, ctx, method) {
+  const cors = corsHeaders(request, env);
+  if (cors === null) return { response: json({ error: "Origin not allowed." }, 403) };
+  if (request.method === "OPTIONS") {
+    return {
+      response: new Response(null, {
+        status: 204,
+        headers: { ...cors, "access-control-allow-methods": `${method}, OPTIONS`, "access-control-allow-headers": "content-type" },
+      }),
+    };
+  }
+  if (request.method !== method) return { response: json({ error: `Use ${method}.` }, 405, cors) };
+  const email = await authenticatedEmail(ctx);
+  if (!email && !isLocalBypass(request, env)) {
+    return { response: json({ error: "AI features require Cloudflare Access." }, 401, cors) };
+  }
+  return { cors };
+}
+
+function aiError(error, cors) {
+  if (error instanceof PlanError) return json({ error: error.message, code: error.code }, error.status, cors);
+  return json({ error: error instanceof Error ? error.message : "AI request failed." }, 500, cors);
+}
+
+async function readAiBody(request) {
+  try {
+    return await request.json();
+  } catch {
+    throw new PlanError("Invalid JSON.", { code: "bad_request", status: 400 });
+  }
+}
+
+function readImage(value) {
+  if (value == null || value === "") return null;
+  if (typeof value !== "string" || !/^data:image\/(jpeg|png|webp|gif);base64,/.test(value)) {
+    throw new PlanError("The image must be a base64 data URL.", { code: "bad_request", status: 422 });
+  }
+  if (value.length > MAX_IMAGE_DATA_URL_LENGTH) {
+    throw new PlanError("The image is too large.", { code: "bad_request", status: 413 });
+  }
+  return value;
+}
+
+function parseJsonObject(text) {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeReceipt(raw) {
+  const amount = Number(raw.amount);
+  return {
+    label: typeof raw.label === "string" && raw.label.trim() ? raw.label.trim().slice(0, 120) : null,
+    amount: Number.isFinite(amount) && amount > 0 ? amount : null,
+    currency: typeof raw.currency === "string" ? raw.currency.trim().toUpperCase().slice(0, 3) : null,
+    category: RECEIPT_CATEGORIES.includes(raw.category) ? raw.category : "other",
+  };
+}
+
+async function aiStatus(request, env, ctx) {
+  const guard = await aiGuard(request, env, ctx, "GET");
+  if (guard.response) return guard.response;
+  return json(await getPlanStatus(env), 200, { ...guard.cors, "cache-control": "no-store" });
+}
+
+async function aiTest(request, env, ctx) {
+  const guard = await aiGuard(request, env, ctx, "POST");
+  if (guard.response) return guard.response;
+  try {
+    const body = await readAiBody(request);
+    const text = typeof body.text === "string" ? body.text.trim().slice(0, 8000) : "";
+    const output = await runResponse(env, { text, imageDataUrl: readImage(body.image) });
+    return json({ output }, 200, guard.cors);
+  } catch (error) {
+    return aiError(error, guard.cors);
+  }
+}
+
+async function scanReceipt(request, env, ctx) {
+  const guard = await aiGuard(request, env, ctx, "POST");
+  if (guard.response) return guard.response;
+  try {
+    const body = await readAiBody(request);
+    const image = readImage(body.image);
+    if (!image) throw new PlanError("Provide a receipt photo.", { code: "bad_request", status: 422 });
+    const output = await runResponse(env, {
+      instructions: RECEIPT_INSTRUCTIONS,
+      text: "Read this receipt.",
+      imageDataUrl: image,
+    });
+    const parsed = parseJsonObject(output);
+    if (!parsed) return json({ error: "Could not read the receipt. Try a clearer photo." }, 422, guard.cors);
+    return json(normalizeReceipt(parsed), 200, guard.cors);
+  } catch (error) {
+    return aiError(error, guard.cors);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === "/api/resolve-place") return resolvePlace(request, env);
     if (url.pathname === "/api/travel-time") return computeTravelTime(request, env);
     if (url.pathname === "/api/plan") return planDocument(request, env, ctx);
+    if (url.pathname === "/api/ai/status") return aiStatus(request, env, ctx);
+    if (url.pathname === "/api/ai/test") return aiTest(request, env, ctx);
+    if (url.pathname === "/api/scan-receipt") return scanReceipt(request, env, ctx);
     return env.ASSETS.fetch(request);
   },
 };

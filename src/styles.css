@@ -1977,3 +1977,101 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+/* Receipt scan inside the expense form */
+.expense-scan-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.expense-scan-message {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.expense-scan-message.done {
+  color: var(--green);
+}
+
+.expense-scan-message.error {
+  color: var(--coral);
+}
+
+/* ChatGPT test panel (?ai-test) */
+.ai-playground {
+  display: grid;
+  gap: 10px;
+  margin: 12px 30px 0;
+  padding: 14px 16px;
+  background: var(--paper);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
+
+.ai-playground header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-status {
+  font-size: 12px;
+  color: var(--coral);
+}
+
+.ai-status.connected {
+  color: var(--green);
+}
+
+.ai-playground form {
+  display: grid;
+  gap: 8px;
+}
+
+.ai-playground textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cdd5cf;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.ai-playground-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-playground-preview {
+  max-width: min(240px, 100%);
+  border-radius: 8px;
+}
+
+.ai-playground-error {
+  margin: 0;
+  color: var(--coral);
+  font-size: 12px;
+}
+
+.ai-playground-output {
+  margin: 0;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .ai-playground {
+    margin: 12px 16px 0;
+  }
+}

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { summarizeExpenses } from "../domain/plan";
+import { scanReceipt } from "../services/aiClient";
+import { compressImage } from "../services/compressImage";
 
 const CATEGORIES = [
   { value: "flight", label: "✈️ 機票" },
@@ -35,11 +37,16 @@ function ExpenseRow({ expense, onRemove }) {
   );
 }
 
+const SUPPORTED_CURRENCIES = ["JPY", "TWD"];
+
 function ExpenseAddForm({ onAdd }) {
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("JPY");
   const [category, setCategory] = useState("other");
+  const [scanStatus, setScanStatus] = useState("idle");
+  const [scanMessage, setScanMessage] = useState("");
+  const fileInputRef = useRef(null);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -48,10 +55,53 @@ function ExpenseAddForm({ onAdd }) {
     onAdd({ label: label.trim(), amount: parsedAmount, currency, category });
     setLabel("");
     setAmount("");
+    setScanStatus("idle");
+    setScanMessage("");
+  }
+
+  // The scan only pre-fills the form. Nothing is saved until you press Add,
+  // so a misread total is caught before it reaches the expense list.
+  async function handleReceiptPhoto(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setScanStatus("loading");
+    setScanMessage("ChatGPT 正在讀收據…");
+    try {
+      const result = await scanReceipt(await compressImage(file));
+      if (result.label) setLabel(result.label);
+      if (Number.isFinite(result.amount)) setAmount(String(result.amount));
+      if (SUPPORTED_CURRENCIES.includes(result.currency)) setCurrency(result.currency);
+      if (result.category) setCategory(result.category);
+      setScanStatus("done");
+      setScanMessage("已自動填入,確認無誤再按 Add。");
+    } catch (error) {
+      setScanStatus("error");
+      setScanMessage(error.message);
+    }
   }
 
   return (
     <form className="expense-add-form" onSubmit={handleSubmit}>
+      <div className="expense-scan-row">
+        <button
+          type="button"
+          className="secondary-button compact"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={scanStatus === "loading"}
+        >
+          📷 拍收據
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+          onChange={handleReceiptPhoto}
+        />
+        {scanMessage && <span className={`expense-scan-message ${scanStatus}`}>{scanMessage}</span>}
+      </div>
       <input value={label} onChange={(event) => setLabel(event.target.value)} placeholder="花費項目,例如：租車" />
       <div className="expense-add-row">
         <input
