@@ -1,4 +1,5 @@
 import { getPlanStatus, PlanError, runResponse } from "./chatgptPlan.js";
+import { handleMcp } from "./mcp.js";
 
 const GOOGLE_HOSTS = new Set(["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl", "goo.gl"]);
 const TRIP_ID = "okinawa-2027";
@@ -381,6 +382,7 @@ export default {
     if (url.pathname === "/api/ai/status") return aiStatus(request, env, ctx);
     if (url.pathname === "/api/ai/test") return aiTest(request, env, ctx);
     if (url.pathname === "/api/scan-receipt") return scanReceipt(request, env, ctx);
+    if (url.pathname === "/mcp") return handleMcp(request, env, { tripId: TRIP_ID });
     return env.ASSETS.fetch(request);
   },
 };

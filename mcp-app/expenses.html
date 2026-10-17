@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TripFlow expenses</title>
+  </head>
+  <body>
+    <main class="card">
+      <header>
+        <div>
+          <p class="eyebrow">TripFlow</p>
+          <h1 id="trip-name">記帳</h1>
+        </div>
+        <button id="refresh" type="button">重新整理</button>
+      </header>
+      <section class="total">
+        <span>總花費</span>
+        <strong id="grand-total">—</strong>
+        <small id="breakdown"></small>
+      </section>
+      <ul id="items"></ul>
+      <p id="empty" hidden>還沒有記錄。</p>
+      <p id="status" class="status"></p>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
