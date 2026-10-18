@@ -4,4 +4,3 @@ dist/
 *.local
 .dev.vars
 .wrangler/
-.siwc/
