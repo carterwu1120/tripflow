@@ -3,7 +3,9 @@
   "main": "worker/index.js",
   "compatibility_date": "2026-09-09",
   "vars": {
-    "ALLOWED_ORIGIN": "https://tripflow.carterwu1120.workers.dev"
+    "ALLOWED_ORIGIN": "https://tripflow.carterwu1120.workers.dev",
+    "ACCESS_TEAM_DOMAIN": "square-meadow-06ee.cloudflareaccess.com",
+    "ACCESS_AUD": "aabd416604df16b1150cbfcaae6b2dbfc5c079331429bb0fd642999b18b0818d"
   },
   "assets": {
     "directory": "./dist",

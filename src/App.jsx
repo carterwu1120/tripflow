@@ -12,6 +12,27 @@ import { computeTravelTime } from "./services/travelTime";
 const STORAGE_KEY = "tripflow-okinawa-2027-v3";
 const LEGACY_STORAGE_KEY = "tripflow-okinawa-2027-v2";
 
+const LOCAL_BACKUP_PREFIX = "tripflow-local-backup:";
+const MAX_LOCAL_BACKUPS = 5;
+
+// The cloud copy replaces this browser's plan on load. If they differ, keep a
+// timestamped copy of the local plan first so a wrong device syncing first can
+// never silently erase someone's real itinerary. Keeps the newest few.
+function backUpLocalPlan(remotePlan) {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!saved) return;
+    const local = JSON.stringify(normalizePlan(JSON.parse(saved)));
+    if (local === JSON.stringify(normalizePlan(remotePlan))) return;
+
+    localStorage.setItem(`${LOCAL_BACKUP_PREFIX}${new Date().toISOString()}`, saved);
+    const backups = Object.keys(localStorage).filter((key) => key.startsWith(LOCAL_BACKUP_PREFIX)).sort();
+    for (const key of backups.slice(0, -MAX_LOCAL_BACKUPS)) localStorage.removeItem(key);
+  } catch {
+    // Storage full or unavailable: the cloud copy still loads.
+  }
+}
+
 function loadPlan() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
@@ -50,7 +71,10 @@ export default function App() {
     loadRemotePlan()
       .then((remote) => {
         if (cancelled) return;
-        if (remote?.plan) dispatch({ type: "replace-plan", plan: remote.plan });
+        if (remote?.plan) {
+          backUpLocalPlan(remote.plan);
+          dispatch({ type: "replace-plan", plan: remote.plan });
+        }
         setCloudReady(true);
         setSyncStatus(remote ? "synced" : "saving");
       })

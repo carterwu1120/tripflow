@@ -1,3 +1,4 @@
+import { verifyAccessJwt } from "./accessIdentity.js";
 import { handleMcp } from "./mcp.js";
 
 const GOOGLE_HOSTS = new Set(["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl", "goo.gl"]);
@@ -181,9 +182,12 @@ async function computeTravelTime(request, env) {
   }
 }
 
-async function authenticatedEmail(ctx) {
+// Prefer ctx.access when Cloudflare provides it; it doesn't for Workers with
+// static assets, so fall back to verifying the Access JWT ourselves.
+async function authenticatedEmail(request, env, ctx) {
   const identity = await ctx.access?.getIdentity?.();
-  return typeof identity?.email === "string" ? identity.email.toLowerCase() : null;
+  if (typeof identity?.email === "string") return { email: identity.email.toLowerCase() };
+  return verifyAccessJwt(request, env);
 }
 
 async function planDocument(request, env, ctx) {
@@ -200,8 +204,8 @@ async function planDocument(request, env, ctx) {
     });
   }
 
-  const email = await authenticatedEmail(ctx);
-  if (!email) return json({ error: "Cloud sync requires Cloudflare Access." }, 401, cors);
+  const { email, error: identityError } = await authenticatedEmail(request, env, ctx);
+  if (!email) return json({ error: "Cloud sync requires Cloudflare Access.", reason: identityError }, 401, cors);
   if (!env.DB) return json({ error: "D1 is not configured." }, 503, cors);
 
   if (request.method === "GET") {
