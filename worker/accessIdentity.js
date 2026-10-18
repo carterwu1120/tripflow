@@ -68,28 +68,33 @@ export async function verifyAccessJwt(request, env) {
   }
   if (header.alg !== "RS256") return { error: "unexpected_algorithm" };
 
-  // A key Cloudflare rotated in since the last fetch earns one refresh.
-  let keys = await signingKeys(teamDomain);
-  let jwk = keys.find((key) => key.kid === header.kid);
-  if (!jwk) {
-    keys = await signingKeys(teamDomain, { refresh: true });
-    jwk = keys.find((key) => key.kid === header.kid);
-  }
-  if (!jwk) return { error: "unknown_signing_key" };
+  let signatureValid;
+  try {
+    // A key Cloudflare rotated in since the last fetch earns one refresh.
+    let keys = await signingKeys(teamDomain);
+    let jwk = keys.find((key) => key.kid === header.kid);
+    if (!jwk) {
+      keys = await signingKeys(teamDomain, { refresh: true });
+      jwk = keys.find((key) => key.kid === header.kid);
+    }
+    if (!jwk) return { error: "unknown_signing_key" };
 
-  const key = await crypto.subtle.importKey(
-    "jwk",
-    jwk,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["verify"],
-  );
-  const signatureValid = await crypto.subtle.verify(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    base64UrlToBytes(parts[2]),
-    new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
-  );
+    const key = await crypto.subtle.importKey(
+      "jwk",
+      jwk,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
+    signatureValid = await crypto.subtle.verify(
+      "RSASSA-PKCS1-v1_5",
+      key,
+      base64UrlToBytes(parts[2]),
+      new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
+    );
+  } catch (error) {
+    return { error: `key_error: ${error instanceof Error ? error.message : String(error)}` };
+  }
   if (!signatureValid) return { error: "bad_signature" };
 
   const now = Math.floor(Date.now() / 1000);

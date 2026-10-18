@@ -204,9 +204,22 @@ async function planDocument(request, env, ctx) {
     });
   }
 
+  // Report the stage that failed instead of letting the Worker crash with an
+  // opaque 1101 page, so a failure shows up in the browser's Network panel.
+  let stage = "identity";
+  try {
+    return await syncPlanDocument(request, env, ctx, cors, (next) => { stage = next; });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return json({ error: "Cloud sync failed.", reason: `${stage}: ${message}` }, 500, cors);
+  }
+}
+
+async function syncPlanDocument(request, env, ctx, cors, setStage) {
   const { email, error: identityError } = await authenticatedEmail(request, env, ctx);
   if (!email) return json({ error: "Cloud sync requires Cloudflare Access.", reason: identityError }, 401, cors);
   if (!env.DB) return json({ error: "D1 is not configured." }, 503, cors);
+  setStage(request.method === "GET" ? "read" : "write");
 
   if (request.method === "GET") {
     const row = await env.DB.prepare(
